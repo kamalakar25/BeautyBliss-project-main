@@ -291,7 +291,7 @@ const BookSlot = () => {
   // Fetch terms and conditions
   const fetchTerms = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/terms/terms");
+      const response = await axios.get(`${BASE_URL}/api/terms/terms`);
       // Remove duplicates based on the 'term' property
       const uniqueTerms = Array.from(
         new Set(response.data.map((item) => item.term))
