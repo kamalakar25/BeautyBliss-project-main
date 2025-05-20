@@ -15,6 +15,8 @@ import {
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
+const BASE_URL = process.env.REACT_APP_API_URL;
+
 const UserProfile = () => {
   const userEmail = localStorage.getItem('email');
   const [user, setUser] = useState(null);
@@ -27,7 +29,7 @@ const UserProfile = () => {
   useEffect(() => {
     if (userEmail) {
       axios
-        .get(`http://localhost:5000/api/users/userProfile/${encodeURIComponent(userEmail)}`)
+        .get(`${BASE_URL}/api/users/userProfile/${encodeURIComponent(userEmail)}`)
         .then((res) => {
           setUser(res.data);
           setFormData({ ...res.data, password: '', confirmPassword: '' });
@@ -155,7 +157,7 @@ const UserProfile = () => {
     delete updateData.confirmPassword;
 
     axios
-      .put(`http://localhost:5000/api/users/updateProfile/${encodeURIComponent(userEmail)}`, updateData)
+      .put(`${BASE_URL}/api/users/updateProfile/${encodeURIComponent(userEmail)}`, updateData)
       .then((res) => {
         setUser(res.data.user);
         alert('Profile updated successfully!');
