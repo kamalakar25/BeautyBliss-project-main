@@ -59,6 +59,9 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
   },
 }));
 
+
+const BASE_URL = process.env.REACT_APP_API_URL;
+
 const SpProfile = () => {
   const spEmail = localStorage.getItem('email');
   const [serviceProvider, setServiceProvider] = useState(null);
@@ -80,7 +83,7 @@ const SpProfile = () => {
   useEffect(() => {
     if (spEmail) {
       axios
-        .get(`http://localhost:5000/api/admin/SpProfile/${encodeURIComponent(spEmail)}`)
+        .get(`${BASE_URL}/api/admin/SpProfile/${encodeURIComponent(spEmail)}`)
         .then((res) => {
           setServiceProvider(res.data);
           setFormData({
@@ -365,7 +368,7 @@ const SpProfile = () => {
     delete updateData.confirmPassword;
 
     axios
-      .put(`http://localhost:5000/api/admin/updateSpProfile/${encodeURIComponent(spEmail)}`, updateData)
+      .put(`${BASE_URL}/api/admin/updateSpProfile/${encodeURIComponent(spEmail)}`, updateData)
       .then((res) => {
         setServiceProvider(res.data.serviceProvider);
         alert('Profile updated successfully!');
