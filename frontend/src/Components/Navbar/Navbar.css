@@ -2,10 +2,10 @@
 .navbar {
   display: flex;
   align-items: center;
-  background: transparent; /* Initial transparent background */
+  background: transparent;
   backdrop-filter: blur(8px);
   padding: 15px 30px;
-  box-shadow: none; /* Remove shadow initially */
+  box-shadow: none;
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -14,8 +14,8 @@
 }
 
 .navbar.scrolled {
-  background: #ffffff; /* White background when scrolled */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Add shadow when scrolled */
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 body {
@@ -86,19 +86,47 @@ body {
 .navbar-links {
   list-style: none;
   display: flex;
-  justify-content: space-between;
   margin: 0;
   padding-left: 0;
-  width: 50%;
-  margin-left: auto squats;
+  margin-left: auto;
   transition: all 0.3s ease;
+  flex-wrap: nowrap; /* Prevent wrapping on larger screens */
+  gap: 20px; /* Replace justify-content: space-between with gap */
 }
 
 .navbar-links li {
   opacity: 0;
   animation: linkFadeIn 0.5s ease forwards;
   animation-delay: calc(0.1s * var(--i));
+  flex: 0 0 auto; /* Prevent shrinking or growing disproportionately */
 }
+
+/* Add styles for notification wrapper and badge */
+.notification-wrapper {
+  display: inline-flex; /* Keep icon and badge together */
+  align-items: center;
+  position: relative;
+  gap: 6px; /* Space between bell and badge/text */
+}
+
+.notification-badge {
+  position: absolute;
+  top: -8px; /* Same as inline style */
+  right: -20px; /* Same as inline style */
+  background: #ff6f61;
+  color: #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+
+
 
 @keyframes linkFadeIn {
   0% {
@@ -117,10 +145,11 @@ body {
   font-family: 'Poppins', sans-serif;
   font-size: 16px;
   position: relative;
-  display: inline-block;
-  padding: 5px 15px;
+  display: inline-block; /* Changed to inline-block for horizontal layout */
+  padding: 5px 10px;
   font-style: cursive !important;
   transition: color 0.3s ease-in-out, transform 0.2s ease;
+  white-space: nowrap;
 }
 
 .navbar-links li .navbar-login-btn {
@@ -130,14 +159,16 @@ body {
   font-weight: 500;
   position: relative;
   display: inline-block;
-  padding: 5px 15px;
+  padding: 5px 10px; /* Reduced padding */
   background: linear-gradient(135deg, #201548, #201548);
   border: none;
   border-radius: 5px;
   cursor: pointer;
   transition: color 0.3s ease-in-out, transform 0.2s ease, background 0.3s ease;
+  white-space: nowrap; /* Prevent text wrapping */
 }
 
+/* Remaining styles for hover effects, animations, etc., remain unchanged */
 .navbar-links li a::before,
 .navbar-links li a::after,
 .navbar-links li .navbar-login-btn::before,
@@ -228,7 +259,7 @@ body {
   transition: width 0.3s ease;
 }
 
-.navbar-links li a:hover span::after,
+/* .navbar-links li a:hover span::after, */
 .navbar-links li .navbar-login-btn:hover span::after {
   width: 100%;
 }
@@ -264,7 +295,189 @@ body {
   }
 }
 
-/* Video Container and Carousel Styles */
+/* Media Queries for Responsive Design */
+
+/* Large screens (>1300px) */
+@media (min-width: 1301px) {  .navbar {
+    padding: 15px 30px;
+    justify-content: space-between;
+  }
+  .navbar-logo h1 {
+    font-size: 32px;
+  }
+  .navbar-links {
+    width: auto;
+    gap: 20px;
+  }
+  .navbar-links li a,
+  .navbar-links li .navbar-login-btn {
+    font-size: 16px;
+    padding: 5px 12px;
+  }
+  .notification-wrapper {
+    gap: 6px; /* Consistent spacing in horizontal layout */
+  }
+  .notification-badge {
+    top: -8px;
+    right: -20px;
+  }}
+
+/* Medium and smaller screens (≤1300px) */
+@media (max-width: 1300px) { 
+  .navbar {
+    padding: 12px 25px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .navbar-logo h1 {
+    font-size: 28px;
+  }
+  .navbar-toggle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .navbar-links {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    width: 250px;
+    background: #ffffff;
+    position: absolute;
+    top: 100%;
+    right: 20px;
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+  }
+  .navbar-links.active {
+    display: flex;
+  }
+  .navbar-links li {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    width: 100%;
+  }
+  .navbar-links.active li {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: calc(0.1s * var(--i));
+    animation: mobileTextPop 0.5s ease forwards;
+  }
+  .navbar-links li a,
+  .navbar-links li .navbar-login-btn {
+    font-size: 16px;
+    color: #0e0f0f;
+    display: flex; /* Keep flex for alignment */
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .navbar-links li .navbar-login-btn {
+    background: none;
+    border: none;
+    color: #201548;
+    cursor: pointer;
+  }
+  .notification-wrapper {
+    display: inline-flex; /* Ensure icon and badge stay together */
+    align-items: center;
+    gap: 6px; /* Match horizontal layout */
+  }
+  .notification-badge {
+    position: absolute;
+    top: -8px;
+    right: -20px; /* Consistent positioning */
+  }}
+
+/* Small screens (≤768px) */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 10px 20px;
+  }
+  .navbar-logo h1 {
+    font-size: 24px;
+  }
+  .navbar-toggle {
+    font-size: 22px;
+  }
+  .navbar-links {
+    width: 200px;
+    right: 15px;
+  }
+  .navbar-links li a,
+  .navbar-links li .navbar-login-btn {
+    font-size: 15px;
+    padding: 7px 10px;
+  }
+  .notification-badge {
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem; /* Slightly smaller for smaller screens */
+  }
+}
+
+/* Extra small screens (≤480px) */
+@media (max-width: 480px) {
+  .navbar {
+    padding: 10px 15px;
+  }
+  .navbar-logo h1 {
+    font-size: 20px;
+  }
+  .navbar-toggle {
+    font-size: 20px;
+  }
+  .navbar-links {
+    width: 180px;
+    right: 15px;
+  }
+  .navbar-links li a,
+  .navbar-links li .navbar-login-btn {
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+  .notification-badge {
+    width: 16px;
+    height: 16px;
+    font-size: 0.65rem;
+  }
+}
+
+/* Very small screens (≤360px) */
+@media (max-width: 360px) {
+  .navbar {
+    padding: 8px 10px;
+  }
+  .navbar-logo h1 {
+    font-size: 18px;
+  }
+  .navbar-toggle {
+    font-size: 18px;
+  }
+  .navbar-links {
+    width: 160px;
+    right: 10px;
+  }
+  .navbar-links li a,
+  .navbar-links li .navbar-login-btn {
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+  .notification-badge {
+    width: 14px;
+    height: 14px;
+    font-size: 0.6rem;
+  }
+}
+
+/* Video Container and Carousel Styles (unchanged) */
 .video-container {
   width: 100%;
   max-width: 1200px;
@@ -329,126 +542,14 @@ body {
   background-color: #201548;
 }
 
-/* Media Queries for Responsive Design */
-
-/* Large screens (>1200px) */
-@media (min-width: 1201px) {
-  .navbar {
-    padding: 15px 30px;
-    justify-content: space-between;
-  }
-  .navbar-logo h1 {
-    font-size: 32px;
-  }
-  .navbar-links {
-    width: 60%;
-  }
-}
-
-/* Medium screens (769px - 1200px) */
+/* Media Queries for Carousel (unchanged) */
 @media (max-width: 1200px) {
-  .navbar {
-    padding: 12px 25px;
-    justify-content: space-between;
-  }
-  .navbar-logo h1 {
-    font-size: 28px;
-  }
-  .navbar-links {
-    width: 70%;
-  }
-  .navbar-links li a,
-  .navbar-links li .navbar-login-btn {
-    font-size: 15px;
-    padding: 5px 12px;
-  }
   .carousel-item video {
     max-height: 400px;
   }
 }
 
-/* Small screens (481px - 768px) */
 @media (max-width: 768px) {
-  .navbar {
-    padding: 10px 20px;
-    background: transparent; /* Transparent initially */
-    position: relative;
-    justify-content: space-between;
-    flex-wrap: wrap;
-  }
-  .navbar.scrolled {
-    background: #ffffff; /* White background when scrolled */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-  .navbar-logo h1 {
-    font-size: 24px;
-  }
-  .navbar-toggle {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .navbar-links {
-    display: none;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-    width: 200px;
-    background: #ffffff;
-    position: absolute;
-    top: 100%;
-    right: 20px;
-    padding: 10px 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    z-index: 1001;
-  }
-  .navbar-links.active {
-    display: flex;
-  }
-  .navbar-links li {
-    opacity: 0;
-    transform: translateY(10px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    width: 100%;
-  }
-  .navbar-links.active li {
-    opacity: 1;
-    transform: translateY(0);
-    transition-delay: calc(0.1s * var(--i));
-    animation: mobileTextPop 0.5s ease forwards;
-  }
-  @keyframes mobileTextPop {
-    0% {
-      opacity: 0;
-      transform: translateY(15px) scale(0.9);
-    }
-    60% {
-      opacity: 0.8;
-      transform: translateY(-3px) scale(1.05);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-  .navbar-links li a,
-  .navbar-links li .navbar-login-btn {
-    font-size: 16px;
-    color: #0e0f0f;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 8px 12px;
-    text-decoration: none;
-  }
-  .navbar-links li .navbar-login-btn {
-    background: none;
-    border: none;
-    color: #201548;
-    cursor: pointer;
-  }
   .carousel-item video {
     max-height: 300px;
   }
@@ -459,26 +560,7 @@ body {
   }
 }
 
-/* Extra small screens (≤480px) */
 @media (max-width: 480px) {
-  .navbar {
-    padding: 10px 15px;
-  }
-  .navbar-logo h1 {
-    font-size: 20px;
-  }
-  .navbar-toggle {
-    font-size: 20px;
-  }
-  .navbar-links {
-    width: 180px;
-    right: 15px;
-  }
-  .navbar-links li a,
-  .navbar-links li .navbar-login-btn {
-    font-size: 14px;
-    padding: 6px 10px;
-  }
   .carousel-item video {
     max-height: 200px;
   }
@@ -489,26 +571,7 @@ body {
   }
 }
 
-/* Very small screens (≤360px) */
 @media (max-width: 360px) {
-  .navbar {
-    padding: 8px 10px;
-  }
-  .navbar-logo h1 {
-    font-size: 18px;
-  }
-  .navbar-toggle {
-    font-size: 18px;
-  }
-  .navbar-links {
-    width: 160px;
-    right: 10px;
-  }
-  .navbar-links li a,
-  .navbar-links li .navbar-login-btn {
-    font-size: 12px;
-    padding: 5px 8px;
-  }
   .carousel-item video {
     max-height: 150px;
   }

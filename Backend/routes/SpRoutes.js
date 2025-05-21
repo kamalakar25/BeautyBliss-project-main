@@ -197,8 +197,18 @@ router.post(
   async (req, res) => {
     try {
       const email = req.params.email;
-      const { serviceName, style, price } = req.body;
+      const { serviceName, style, price, duration } = req.body;
 
+      // Validation
+      if (!serviceName) {
+        return res.status(400).json({ message: "Service name is required" });
+      }
+      if (!price || isNaN(price) || parseFloat(price) <= 0) {
+        return res.status(400).json({ message: "Price must be a positive number" });
+      }
+      if (!duration || isNaN(duration) || parseInt(duration) < 20) {
+        return res.status(400).json({ message: "Duration must be at least 20 minutes" });
+      }
       if (!req.file) {
         return res.status(400).json({ message: "No image file uploaded" });
       }
@@ -215,7 +225,8 @@ router.post(
       shop.services.push({
         serviceName,
         style,
-        price,
+        price: parseFloat(price),
+        duration: parseInt(duration), // Store as integer
         shopImage: shopImagePath,
       });
 
@@ -224,10 +235,11 @@ router.post(
       res.status(200).json({
         message: "Service added successfully",
         services: shop.services,
+        parlorName: shop.name, // Include parlorName for notifications
       });
     } catch (error) {
-      // console.error('Error adding service:', error);
-      res.status(500).json({ message: "Server error", error });
+      console.error('Error adding service:', error);
+      res.status(500).json({ message: "Server error", error: error.message });
     }
   }
 );
@@ -238,9 +250,20 @@ router.put(
   upload.single("shopImage"),
   async (req, res) => {
     const { serviceId } = req.params;
-    const { serviceName, price, style } = req.body;
+    const { serviceName, price, style, duration } = req.body;
 
     try {
+      // Validation
+      if (!serviceName) {
+        return res.status(400).json({ message: "Service name is required" });
+      }
+      if (!price || isNaN(price) || parseFloat(price) <= 0) {
+        return res.status(400).json({ message: "Price must be a positive number" });
+      }
+      if (!duration || isNaN(duration) || parseInt(duration) < 20) {
+        return res.status(400).json({ message: "Duration must be at least 20 minutes" });
+      }
+
       const AdminSalon = await Shop.findOne({ "services._id": serviceId });
       if (!AdminSalon) {
         return res.status(404).json({ message: "Service not found" });
@@ -253,9 +276,11 @@ router.put(
           .json({ message: "Service not found in document" });
       }
 
-      if (serviceName) service.serviceName = serviceName;
-      if (style) service.style = style;
-      if (price) service.price = price;
+      // Update fields
+      service.serviceName = serviceName;
+      service.style = style || ""; // Allow empty style
+      service.price = parseFloat(price);
+      service.duration = parseInt(duration); // Update duration
 
       if (req.file) {
         // Delete old image if it exists
@@ -270,10 +295,11 @@ router.put(
       res.status(200).json({
         message: "Service updated successfully",
         updatedService: service,
+        parlorName: AdminSalon.name, // Include parlorName for notifications
       });
     } catch (error) {
-      // console.error('Update Error:', error);
-      res.status(500).json({ message: "Internal server error" });
+      console.error('Update Error:', error);
+      res.status(500).json({ message: "Internal server error", error: error.message });
     }
   }
 );

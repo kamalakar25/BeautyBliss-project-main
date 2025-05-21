@@ -305,7 +305,7 @@ const SalonPage = () => {
                 alt={`Salon ${index + 1}`}
                 style={{
                   width: "100%",
-                  height: isMobile ? "60vh" : "90vh",
+                  height: isMobile ? "60vh" : "70vh",
                   objectFit: "cover",
                   objectPosition: "center",
                 }}

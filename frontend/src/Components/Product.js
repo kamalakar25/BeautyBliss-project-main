@@ -1112,6 +1112,7 @@ const Product = () => {
           service: item.serviceName || "Service",
           style: item.style || "No Style",
           email: item.email || "No Email",
+          serviceId: item.serviceId || "No Service ID",
           price: item.price || 0,
           designation: item.designation || "Salon",
           countPeople: item.countPeople || 0,

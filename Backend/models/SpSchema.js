@@ -31,6 +31,7 @@ const addServiceSchema = new mongoose.Schema({
   style: { type: String, required: true },
   price: { type: Number, required: true },
   shopImage: { type: String, required: true },
+  duration: { type: Number, required: true, min: 20 },
 });
 
 const salonShopSchema = new mongoose.Schema(

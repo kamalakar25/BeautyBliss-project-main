@@ -75,6 +75,7 @@ const ServicePage = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [formErrors, setFormErrors] = useState({});
   const servicesPerPage = 4;
   const itemRefs = useRef({});
   const svgIconRef = useRef(null);
@@ -83,6 +84,7 @@ const ServicePage = () => {
     serviceName: "",
     style: "",
     price: "",
+    duration: "",
     imageFile: null,
     imagePreview: "",
   });
@@ -124,18 +126,76 @@ const ServicePage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value.trim() }));
+
+    // Real-time validation
+    if (name === "serviceName") {
+      if (!value) {
+        setFormErrors((prev) => ({
+          ...prev,
+          serviceName: "Service name is required",
+        }));
+      } else {
+        setFormErrors((prev) => ({ ...prev, serviceName: "" }));
+      }
+    } else if (name === "price") {
+      if (!value || parseFloat(value) <= 0) {
+        setFormErrors((prev) => ({
+          ...prev,
+          price: "Price must be a positive number",
+        }));
+      } else {
+        setFormErrors((prev) => ({ ...prev, price: "" }));
+      }
+    } else if (name === "duration") {
+      if (!value || parseInt(value) < 20) {
+        setFormErrors((prev) => ({
+          ...prev,
+          duration: "Duration must be at least 20 minutes",
+        }));
+      } else {
+        setFormErrors((prev) => ({ ...prev, duration: "" }));
+      }
+    }
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type
+      const validImageTypes = ["image/jpeg", "image/png", "image/gif"];
+      if (!validImageTypes.includes(file.type)) {
+        setFormErrors((prev) => ({
+          ...prev,
+          imageFile: "Please upload a valid image (JPEG, PNG, GIF)",
+        }));
+        return;
+      }
       setFormData((prev) => ({
         ...prev,
         imageFile: file,
         imagePreview: URL.createObjectURL(file),
       }));
+      setFormErrors((prev) => ({ ...prev, imageFile: "" }));
     }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.serviceName) {
+      errors.serviceName = "Service name is required";
+    }
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      errors.price = "Price must be a positive number";
+    }
+    if (!formData.duration || parseInt(formData.duration) < 20) {
+      errors.duration = "Duration must be at least 20 minutes";
+    }
+    if (!isEditing && !formData.imageFile) {
+      errors.imageFile = "Image is required for new services";
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleEdit = (index) => {
@@ -143,6 +203,7 @@ const ServicePage = () => {
       serviceName: services[index].serviceName,
       style: services[index].style || "",
       price: services[index].price,
+      duration: services[index].duration || "",
       imageFile: null,
       imagePreview: services[index].shopImage
         ? getImageUrl(services[index].shopImage)
@@ -151,6 +212,7 @@ const ServicePage = () => {
     setIsEditing(true);
     setEditIndex(index);
     setShowForm(true);
+    setFormErrors({});
     if (screenWidth <= 768) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -159,23 +221,32 @@ const ServicePage = () => {
   const createNotifications = async (service, parlorName, action) => {
     try {
       const userEmail = localStorage.getItem("email");
-      const serviceName = `${service.serviceName}${service.style ? ` (${service.style})` : ''}`;
+      const serviceName = `${service.serviceName}${
+        service.style ? ` (${service.style})` : ""
+      }`;
       const serviceId = service._id;
 
-      console.log('ServicePage: Creating notifications:', { parlorEmail: userEmail, serviceId, serviceName });
-      await axios.post(`${BASE_URL}/api/notifications/create-service-notification`, {
-        parlorEmail: userEmail,
-        serviceId,
-        serviceName,
-      });
-      console.log('ServicePage: Notifications created successfully');
+      await axios.post(
+        `${BASE_URL}/api/notifications/create-service-notification`,
+        {
+          parlorEmail: userEmail,
+          serviceId,
+          serviceName,
+        }
+      );
     } catch (error) {
-      console.error('ServicePage: Failed to create notifications:', error.message);
+      console.error(
+        "ServicePage: Failed to create notifications:",
+        error.message
+      );
       setSuccessMessage((prev) => `${prev} (Notifications failed to send)`);
     }
   };
 
   const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
     if (isEditing) {
       await handleUpdate();
     } else {
@@ -188,7 +259,10 @@ const ServicePage = () => {
     form.append("serviceName", formData.serviceName);
     form.append("style", formData.style);
     form.append("price", formData.price);
-    form.append("shopImage", formData.imageFile);
+    form.append("duration", formData.duration);
+    if (formData.imageFile) {
+      form.append("shopImage", formData.imageFile);
+    }
 
     const userEmail = localStorage.getItem("email");
 
@@ -208,19 +282,26 @@ const ServicePage = () => {
           serviceName: "",
           style: "",
           price: "",
+          duration: "",
           imageFile: null,
           imagePreview: "",
         });
+        setFormErrors({});
         setSuccessMessage("Service added successfully!");
         setShowSuccess(true);
         setCurrentPage(1);
 
-        // Create notifications
-        const newService = updatedServices[0]; // Newly added service is first due to reverse()
-        await createNotifications(newService, parlorName, 'added');
+        const newService = updatedServices[0];
+        await createNotifications(newService, parlorName, "added");
       }
     } catch (error) {
       console.error("ServicePage: Error adding service:", error.message);
+      setFormErrors((prev) => ({
+        ...prev,
+        submit:
+          error.response?.data?.message ||
+          "Failed to add service. Please try again.",
+      }));
     }
   };
 
@@ -229,6 +310,7 @@ const ServicePage = () => {
     form.append("serviceName", formData.serviceName);
     form.append("style", formData.style);
     form.append("price", formData.price);
+    form.append("duration", formData.duration);
     if (formData.imageFile) {
       form.append("shopImage", formData.imageFile);
     }
@@ -252,17 +334,24 @@ const ServicePage = () => {
           serviceName: "",
           style: "",
           price: "",
+          duration: "",
           imageFile: null,
           imagePreview: "",
         });
+        setFormErrors({});
         setSuccessMessage("Service updated successfully!");
         setShowSuccess(true);
 
-        // Create notifications
-        await createNotifications(updatedService, parlorName, 'updated');
+        await createNotifications(updatedService, parlorName, "updated");
       }
     } catch (error) {
       console.error("ServicePage: Error updating service:", error.message);
+      setFormErrors((prev) => ({
+        ...prev,
+        submit:
+          error.response?.data?.message ||
+          "Failed to update service. Please try again.",
+      }));
     }
   };
 
@@ -318,11 +407,13 @@ const ServicePage = () => {
           serviceName: "",
           style: "",
           price: "",
+          duration: "",
           imageFile: null,
           imagePreview: "",
         });
         setShowForm(true);
         setIsEditing(false);
+        setFormErrors({});
       } else {
         alert("Please add employee first.");
       }
@@ -355,7 +446,6 @@ const ServicePage = () => {
 
   const getImageUrl = (shopImage) => {
     if (!shopImage) return "/images/placeholder.jpg";
-    // Normalize backslashes to forward slashes
     const normalizedPath = shopImage.replace(/\\/g, "/");
     return `${BASE_URL.replace(/\/$/, "")}/${normalizedPath}`;
   };
@@ -403,47 +493,87 @@ const ServicePage = () => {
 
           return (
             <div className="service-form">
-              <select
-                name="serviceName"
-                value={formData.serviceName}
-                onChange={handleInputChange}
-                className="form-input"
-              >
-                <option value="" disabled>
-                  Select Service
-                </option>
-                {options.map((option, index) => (
-                  <option key={index} value={option}>
-                    {option}
+              <div className="form-field">
+                <select
+                  name="serviceName"
+                  value={formData.serviceName}
+                  onChange={handleInputChange}
+                  className="form-input"
+                  required
+                >
+                  <option value="" disabled>
+                    Select Service
                   </option>
-                ))}
-              </select>
+                  {options.map((option, index) => (
+                    <option key={index} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.serviceName && (
+                  <span className="error-message">
+                    {formErrors.serviceName}
+                  </span>
+                )}
+              </div>
 
-              <input
-                type="text"
-                name="style"
-                placeholder="Style (e.g. Layer Cut, Balayage)"
-                value={formData.style}
-                onChange={handleInputChange}
-                className="form-input"
-              />
+              <div className="form-field">
+                <input
+                  type="text"
+                  name="style"
+                  placeholder="Style (e.g. Layer Cut, Balayage)"
+                  value={formData.style}
+                  onChange={handleInputChange}
+                  className="form-input"
+                />
+              </div>
 
-              <input
-                type="number"
-                name="price"
-                placeholder="Price"
-                value={formData.price}
-                min="0"
-                onChange={handleInputChange}
-                className="form-input"
-              />
+              <div className="form-field">
+                <input
+                  type="number"
+                  name="price"
+                  placeholder="Price"
+                  value={formData.price}
+                  min="0.01"
+                  step="0.01"
+                  onChange={handleInputChange}
+                  className="form-input"
+                  required
+                />
+                {formErrors.price && (
+                  <span className="error-message">{formErrors.price}</span>
+                )}
+              </div>
 
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="form-file-input"
-              />
+              <div className="form-field">
+                <input
+                  type="number"
+                  name="duration"
+                  placeholder="Duration (minutes)"
+                  value={formData.duration}
+                  min="20"
+                  step="1"
+                  onChange={handleInputChange}
+                  className="form-input"
+                  required
+                />
+                {formErrors.duration && (
+                  <span className="error-message">{formErrors.duration}</span>
+                )}
+              </div>
+
+              <div className="form-field">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif"
+                  onChange={handleImageChange}
+                  className="form-file-input"
+                  required={!isEditing}
+                />
+                {formErrors.imageFile && (
+                  <span className="error-message">{formErrors.imageFile}</span>
+                )}
+              </div>
 
               {formData.imagePreview && (
                 <img
@@ -460,18 +590,25 @@ const ServicePage = () => {
                 />
               )}
 
+              {formErrors.submit && (
+                <span className="error-message submit-error">
+                  {formErrors.submit}
+                </span>
+              )}
+
               <div className="form-actions">
                 <button
                   onClick={handleSubmit}
                   className={`submit-btn ${isEditing ? "update-btn" : ""}`}
+                  disabled={Object.values(formErrors).some((error) => error)}
                 >
                   {isEditing ? "Update" : "Submit"}
                 </button>
-
                 <button
                   onClick={() => {
                     setShowForm(false);
                     setIsEditing(false);
+                    setFormErrors({});
                   }}
                   className="cancel-btn"
                 >
@@ -620,7 +757,7 @@ const ServicePage = () => {
             {currentServices.map((svc, index) => (
               <div
                 key={svc._id}
-                ref={(el) => (itemRefs.current[svc._id])}
+                ref={(el) => (itemRefs.current[svc._id] = el)}
                 className={`service-card ${
                   deletingServiceId === svc._id ? "deleting" : ""
                 }`}
@@ -638,7 +775,13 @@ const ServicePage = () => {
                 </div>
                 <div className="service-field">
                   <strong className="field-label">Price:</strong>
-                  <span className="field-value">₹{svc.price}</span>
+                  <span className="field-value">₹{svc.price.toFixed(2)}</span>
+                </div>
+                <div className="service-field">
+                  <strong className="field-label">Duration:</strong>
+                  <span className="field-value">
+                    {svc.duration ? `${svc.duration} min` : "-"}
+                  </span>
                 </div>
                 <div className="service-field service-image-field">
                   <strong className="field-label">Image:</strong>
@@ -647,7 +790,6 @@ const ServicePage = () => {
                       src={getImageUrl(svc.shopImage)}
                       alt={svc.serviceName}
                       className="service-image"
-                  
                     />
                   ) : (
                     <span className="no-image">No Image</span>
@@ -877,7 +1019,6 @@ const ServicePage = () => {
                     </div>
                   </div>
                 </div>
-                
               </div>
             ))}
             {currentServices.length === 0 && (
@@ -892,6 +1033,7 @@ const ServicePage = () => {
                   <th>Service Name</th>
                   <th>Style</th>
                   <th>Price</th>
+                  <th>Duration</th>
                   <th>Image</th>
                   <th>Actions</th>
                 </tr>
@@ -900,7 +1042,7 @@ const ServicePage = () => {
                 {currentServices.map((svc, index) => (
                   <tr
                     key={svc._id}
-                    ref={(el) => (itemRefs.current[svc._id])}
+                    ref={(el) => (itemRefs.current[svc._id] = el)}
                     className={`service-row ${
                       deletingServiceId === svc._id ? "deleting" : ""
                     }`}
@@ -914,20 +1056,14 @@ const ServicePage = () => {
                   >
                     <td>{svc.serviceName}</td>
                     <td>{svc.style || "-"}</td>
-                    <td>₹{svc.price}</td>
+                    <td>₹{svc.price.toFixed(2)}</td>
+                    <td>{svc.duration ? `${svc.duration} min` : "-"}</td>
                     <td>
                       {svc.shopImage ? (
                         <img
                           src={getImageUrl(svc.shopImage)}
                           alt={svc.serviceName}
                           className="service-image"
-                          onError={(e) => {
-                            e.target.src = "/images/placeholder.jpg";
-                            console.error(
-                              "ServicePage: Error loading image:",
-                              svc.shopImage
-                            );
-                          }}
                         />
                       ) : (
                         <span className="no-image">No Image</span>
@@ -1055,7 +1191,7 @@ const ServicePage = () => {
                                 width="8"
                                 height="10"
                                 rx="1"
-                                fill="white"
+                                fill="black"
                               />
                               <rect
                                 className="lid"
@@ -1064,11 +1200,11 @@ const ServicePage = () => {
                                 width="8"
                                 height="2"
                                 rx="0.5"
-                                fill="white"
+                                fill="black"
                                 style={{ transformOrigin: "4 2" }}
                               />
-                              <path d="M6 6H7V12H6V6Z" fill="black" />
-                              <path d="M9 6H10V12H9V6Z" fill="black" />
+                              <path d="M6 6H7V12H6V6Z" fill="white" />
+                              <path d="M9 6H10V12H9V6Z" fill="white" />
                             </svg>
                             {[...Array(3)].map((_, i) => (
                               <div

@@ -1,11 +1,10 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const User = require('../models/user');
-const Shop = require('../models/SpSchema');
+const bcrypt = require("bcryptjs");
+const User = require("../models/user");
+const Shop = require("../models/SpSchema");
 
-const nodemailer = require('nodemailer');
-
+const nodemailer = require("nodemailer");
 
 // Reschedule a booking
 router.post("/reschedule/booking", async (req, res) => {
@@ -40,7 +39,9 @@ router.post("/reschedule/booking", async (req, res) => {
     });
 
     if (conflictingBookings.length > 0) {
-      return res.status(400).json({ message: "Selected slot is already booked" });
+      return res
+        .status(400)
+        .json({ message: "Selected slot is already booked" });
     }
 
     // Update the booking
@@ -57,18 +58,16 @@ router.post("/reschedule/booking", async (req, res) => {
   }
 });
 
-
-
 // Login for both user and admin
-router.post('/login', async (req, res) => {
+router.post("/login", async (req, res) => {
   const { identifier, password, role } = req.body;
 
   if (!identifier || !password || !role) {
-    return res.status(400).json({ message: 'All fields are required' });
+    return res.status(400).json({ message: "All fields are required" });
   }
 
   try {
-    const Model = role === 'User' ? User : Shop;
+    const Model = role === "User" ? User : Shop;
     const user = await Model.findOne({
       $or: [{ email: identifier }, { phone: identifier }],
     });
@@ -77,18 +76,18 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: `${role} not found` });
     }
 
-    if (role !== 'User' && user.approvals === false) {
+    if (role !== "User" && user.approvals === false) {
       return res.status(401).json({
-        message: 'Your account is pending approval. Please wait for approval.',
+        message: "Your account is pending approval. Please wait for approval.",
       });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    if (role === 'User') {
+    if (role === "User") {
       user.login = true;
       await user.save();
     }
@@ -99,29 +98,29 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     // console.error('Error during login:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Check login status
-router.get('/check/login/:email', async (req, res) => {
+router.get("/check/login/:email", async (req, res) => {
   try {
     const { email } = req.params;
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.status(200).json({ loginData: user.login });
   } catch (err) {
     // console.error('Error during login check:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
 // Register user
-router.post('/register', async (req, res) => {
+router.post("/register", async (req, res) => {
   try {
     const { name, email, gender, phone, dob, designation, password, bookings } =
       req.body;
@@ -138,22 +137,22 @@ router.post('/register', async (req, res) => {
     });
 
     await newUser.save();
-    res.status(201).json({ message: 'Registered successfully' });
+    res.status(201).json({ message: "Registered successfully" });
   } catch (err) {
     // console.error('Error registering user:', err);
-    if (err.name === 'ValidationError') {
+    if (err.name === "ValidationError") {
       return res.status(400).json({ error: err.message });
     }
     if (err.code === 11000) {
       const field = Object.keys(err.keyPattern)[0];
       return res.status(400).json({ error: `${field} already exists` });
     }
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
 // Add a booking for a user
-router.post('/:email/bookings', async (req, res) => {
+router.post("/:email/bookings", async (req, res) => {
   try {
     const { email } = req.params;
     const {
@@ -184,12 +183,12 @@ router.post('/:email/bookings', async (req, res) => {
     ) {
       return res
         .status(400)
-        .json({ error: 'All required fields must be provided' });
+        .json({ error: "All required fields must be provided" });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     const bookingData = {
@@ -204,62 +203,62 @@ router.post('/:email/bookings', async (req, res) => {
       Payment_Mode,
       orderId,
       relatedServices: relatedServices || [],
-      favoriteEmployee: favoriteEmployee || '',
+      favoriteEmployee: favoriteEmployee || "",
       createdAt: new Date(),
-      paymentStatus: 'PENDING',
-      confirmed: 'Pending',
+      paymentStatus: "PENDING",
+      confirmed: "Pending",
       refundedAmount: 0,
-      refundStatus: 'NONE',
+      refundStatus: "NONE",
     };
 
     user.bookings.push(bookingData);
     await user.save();
 
     res.status(201).json({
-      message: 'Booking added successfully',
+      message: "Booking added successfully",
       booking: user.bookings[user.bookings.length - 1],
     });
   } catch (err) {
     // console.error('Error adding booking:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
 // Get all bookings
-router.get('/all/bookings', async (req, res) => {
+router.get("/all/bookings", async (req, res) => {
   try {
-    const users = await User.find({}, 'bookings');
+    const users = await User.find({}, "bookings");
     const allBookings = users.flatMap((user) => user.bookings || []);
     res.status(200).json({ bookings: allBookings });
   } catch (err) {
     // console.error('Error fetching all user bookings:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
 // Get user bookings
-router.get('/bookings/:email', async (req, res) => {
+router.get("/bookings/:email", async (req, res) => {
   try {
     const { email } = req.params;
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     res.status(200).json({ bookings: user.bookings, username: user.name });
   } catch (err) {
     // console.error('Error fetching bookings:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
 // Get customer bookings
-router.get('/customer/bookings/:email', async (req, res) => {
+router.get("/customer/bookings/:email", async (req, res) => {
   try {
     const user = await User.findOne({ email: req.params.email });
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.status(200).json([
@@ -270,14 +269,14 @@ router.get('/customer/bookings/:email', async (req, res) => {
     ]);
   } catch (error) {
     // console.error('Error fetching customer bookings:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Get service provider bookings
-router.get('/sp/bookings/:email', async (req, res) => {
+router.get("/sp/bookings/:email", async (req, res) => {
   try {
-    const users = await User.find({}, 'name email bookings');
+    const users = await User.find({}, "name email bookings");
     const bookings = users.flatMap((user) =>
       user.bookings
         .filter((booking) => booking.parlorEmail === req.params.email)
@@ -306,30 +305,30 @@ router.get('/sp/bookings/:email', async (req, res) => {
     res.json(bookings);
   } catch (error) {
     // console.error('Error fetching SP bookings:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Get role by email
-router.get('/role/:email', async (req, res) => {
+router.get("/role/:email", async (req, res) => {
   try {
     const user = await Shop.findOne({ email: req.params.email });
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
     res.status(200).json({ role: user.designation });
   } catch (error) {
     // console.error('Error fetching role:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Get all services
-router.get('/cards/services', async (req, res) => {
+router.get("/cards/services", async (req, res) => {
   try {
     const shops = await Shop.find({ approvals: true })
       .select(
-        'shopName shopImage location services designation spRating countPeople priority email'
+        "shopName shopImage location services designation spRating countPeople priority email "
       )
       .lean();
 
@@ -343,6 +342,7 @@ router.get('/cards/services', async (req, res) => {
           style: service.style,
           price: service.price,
           email: shop.email,
+          serviceId: service._id,
           designation: shop.designation,
           countPeople: shop.countPeople || 0,
           spRating: shop.spRating || 0,
@@ -353,143 +353,171 @@ router.get('/cards/services', async (req, res) => {
     res.status(200).json(services);
   } catch (error) {
     // console.error("Error fetching services:", error);
-    res.status(500).json({ message: 'Error fetching services' });
+    res.status(500).json({ message: "Error fetching services" });
+  }
+});
+
+router.get("/shop/by-service/:serviceId", async (req, res) => {
+  const { serviceId } = req.params;
+
+  try {
+    // Find the shop containing the service
+    const shop = await Shop.findOne({ "services._id": serviceId });
+
+    if (!shop) {
+      return res.status(404).json({ message: "Shop not found" });
+    }
+
+    // Clone shop object and exclude the specific service
+    const shopObj = shop.toObject();
+    shopObj.services = shopObj.services.filter(
+      (service) => service._id.toString() !== serviceId
+    );
+
+    res.status(200).json(shopObj);
+  } catch (error) {
+    console.error("Error fetching shop by service:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
 // Get all users for admin
-router.get('/get/all/users', async (req, res) => {
+router.get("/get/all/users", async (req, res) => {
   try {
-    const users = await User.find({}, 'name email phone gender dob createdAt');
+    const users = await User.find({}, "name email phone gender dob createdAt");
     res.status(200).json(users);
   } catch (err) {
     // console.error('Error fetching users:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Delete user by ID
-router.delete('/:id', async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.status(200).json({ message: 'User deleted successfully' });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json({ message: "User deleted successfully" });
   } catch (err) {
     // console.error('Error deleting user:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Update booking rating
-router.post('/update/booking/rating', async (req, res) => {
+router.post("/update/booking/rating", async (req, res) => {
   try {
     const { email, orderId, userRating, userReview } = req.body;
 
     const user = await User.findOneAndUpdate(
-      { email, 'bookings.orderId': orderId },
+      { email, "bookings.orderId": orderId },
       {
         $set: {
-          'bookings.$.userRating': userRating,
-          'bookings.$.userReview': userReview,
+          "bookings.$.userRating": userRating,
+          "bookings.$.userReview": userReview,
         },
       },
       { new: true }
     );
 
     if (!user) {
-      return res.status(404).json({ message: 'User or Booking not found' });
+      return res.status(404).json({ message: "User or Booking not found" });
     }
 
-    res.status(200).json({ message: 'Review updated successfully' });
+    res.status(200).json({ message: "Review updated successfully" });
   } catch (error) {
     // console.error('Error updating booking rating:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Update booking confirmation
-router.put('/update-confirmation', async (req, res) => {
+router.put("/update-confirmation", async (req, res) => {
   const { email, bookingId } = req.body;
 
   try {
     const user = await User.findOneAndUpdate(
-      { 
-        "bookings._id": bookingId, 
-        "bookings.parlorEmail": email 
+      {
+        "bookings._id": bookingId,
+        "bookings.parlorEmail": email,
       },
-      { 
-        $set: { "bookings.$.confirmed": "Confirmed" } 
+      {
+        $set: { "bookings.$.confirmed": "Confirmed" },
       },
-      { 
-        new: true 
+      {
+        new: true,
       }
     );
 
     if (!user) {
-      return res.status(404).json({ message: 'Booking not found or PIN verification failed' });
+      return res
+        .status(404)
+        .json({ message: "Booking not found or PIN verification failed" });
     }
 
-    res.status(200).json({ message: 'Booking confirmation updated successfully' });
+    res
+      .status(200)
+      .json({ message: "Booking confirmation updated successfully" });
   } catch (error) {
-    console.error('Error updating booking confirmation:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error updating booking confirmation:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
 // Submit service provider complaint
-router.post('/submit-complaint', async (req, res) => {
+router.post("/submit-complaint", async (req, res) => {
   const { email, bookingId, complaint } = req.body;
 
   try {
-    if (!email || !bookingId || !complaint || complaint.trim() === '') {
+    if (!email || !bookingId || !complaint || complaint.trim() === "") {
       return res
         .status(400)
-        .json({ message: 'Email, bookingId, and complaint are required' });
+        .json({ message: "Email, bookingId, and complaint are required" });
     }
 
     const user = await User.findOneAndUpdate(
-      { 'bookings._id': bookingId, 'bookings.parlorEmail': email },
-      { $set: { 'bookings.$.spComplaint': complaint } },
+      { "bookings._id": bookingId, "bookings.parlorEmail": email },
+      { $set: { "bookings.$.spComplaint": complaint } },
       { new: true }
     );
 
     if (!user) {
-      return res.status(404).json({ message: 'Booking not found' });
+      return res.status(404).json({ message: "Booking not found" });
     }
 
-    res.status(200).json({ message: 'Complaint submitted successfully' });
+    res.status(200).json({ message: "Complaint submitted successfully" });
   } catch (error) {
     // console.error('Error submitting complaint:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
 // Update user complaint
-router.post('/update/booking/complaint', async (req, res) => {
+router.post("/update/booking/complaint", async (req, res) => {
   try {
     const { email, orderId, userComplaint } = req.body;
 
     const user = await User.findOneAndUpdate(
-      { email, 'bookings.orderId': orderId },
-      { $set: { 'bookings.$.userComplaint': userComplaint } },
+      { email, "bookings.orderId": orderId },
+      { $set: { "bookings.$.userComplaint": userComplaint } },
       { new: true }
     );
 
     if (!user) {
-      return res.status(404).json({ message: 'User or Booking not found' });
+      return res.status(404).json({ message: "User or Booking not found" });
     }
 
-    res.status(200).json({ message: 'Complaint updated successfully' });
+    res.status(200).json({ message: "Complaint updated successfully" });
   } catch (error) {
     // console.error('Error updating booking complaint:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Get all complaints
-router.get('/get/all/complaints', async (req, res) => {
+router.get("/get/all/complaints", async (req, res) => {
   try {
-    const users = await User.find({}, 'name email bookings');
+    const users = await User.find({}, "name email bookings");
     const userComplaints = [];
     const spComplaints = [];
 
@@ -522,28 +550,28 @@ router.get('/get/all/complaints', async (req, res) => {
     res.json({ userComplaints, spComplaints });
   } catch (error) {
     // console.error('Error fetching complaints:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Collect payment
-router.post('/collect/payment', async (req, res) => {
+router.post("/collect/payment", async (req, res) => {
   try {
     const { bookingId, paymentAmount } = req.body;
 
     const user = await User.findOneAndUpdate(
-      { 'bookings._id': bookingId },
+      { "bookings._id": bookingId },
       {
-        $inc: { 'bookings.$.amount': paymentAmount },
+        $inc: { "bookings.$.amount": paymentAmount },
         $set: {
-          'bookings.$.paymentStatus': paymentAmount >= 0 ? 'PAID' : 'PENDING',
+          "bookings.$.paymentStatus": paymentAmount >= 0 ? "PAID" : "PENDING",
         },
       },
       { new: true }
     );
 
     if (!user) {
-      return res.status(404).json({ message: 'User or Booking not found' });
+      return res.status(404).json({ message: "User or Booking not found" });
     }
 
     const updatedBooking = user.bookings.find(
@@ -551,33 +579,33 @@ router.post('/collect/payment', async (req, res) => {
     );
 
     res.status(200).json({
-      message: 'Payment updated successfully',
+      message: "Payment updated successfully",
       updatedAmount: updatedBooking.amount,
       paymentStatus: updatedBooking.paymentStatus,
     });
   } catch (error) {
     // console.error('Error updating payment:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Cancel booking
-router.post('/cancel/booking', async (req, res) => {
+router.post("/cancel/booking", async (req, res) => {
   const { email, orderId, upiId } = req.body;
 
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     const booking = user.bookings.find((b) => b.orderId === orderId);
-    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
 
-    if (booking.confirmed === 'Cancelled') {
-      return res.status(400).json({ message: 'Booking already cancelled' });
+    if (booking.confirmed === "Cancelled") {
+      return res.status(400).json({ message: "Booking already cancelled" });
     }
 
     if (new Date(booking.date) <= new Date()) {
-      return res.status(400).json({ message: 'Cannot cancel past bookings' });
+      return res.status(400).json({ message: "Cannot cancel past bookings" });
     }
 
     let refundAmount = 0;
@@ -587,67 +615,67 @@ router.post('/cancel/booking', async (req, res) => {
       if (!upiId) {
         return res
           .status(400)
-          .json({ message: 'UPI ID is required for full payment refunds' });
+          .json({ message: "UPI ID is required for full payment refunds" });
       }
       refundAmount = booking.amount * 0.75; // 25% deduction
       booking.upiId = upiId;
-      booking.refundStatus = 'PENDING';
+      booking.refundStatus = "PENDING";
       // console.log(`Initiating refund of ${refundAmount} to UPI ID: ${upiId}`);
     } else {
       refundAmount = 0;
-      booking.refundStatus = 'NONE';
+      booking.refundStatus = "NONE";
     }
 
-    booking.paymentStatus = 'CANCELLED';
-    booking.confirmed = 'Cancelled';
+    booking.paymentStatus = "CANCELLED";
+    booking.confirmed = "Cancelled";
     booking.refundedAmount = refundAmount;
     // booking.time = "";
 
     await user.save();
 
     res.status(200).json({
-      message: 'Booking cancelled successfully',
+      message: "Booking cancelled successfully",
       refundAmount,
       upiId: isFullPayment ? upiId : null,
     });
   } catch (error) {
     // console.error('Error cancelling booking:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Handle refund action (accept/reject)
-router.post('/sp/refund/action', async (req, res) => {
+router.post("/sp/refund/action", async (req, res) => {
   const { email, orderId, action } = req.body;
 
-  if (!['accept', 'reject'].includes(action)) {
-    return res.status(400).json({ message: 'Invalid action' });
+  if (!["accept", "reject"].includes(action)) {
+    return res.status(400).json({ message: "Invalid action" });
   }
 
   try {
-    const user = await User.findOne({ 'bookings.orderId': orderId });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const user = await User.findOne({ "bookings.orderId": orderId });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     const booking = user.bookings.find((b) => b.orderId === orderId);
-    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
 
     if (booking.parlorEmail !== email) {
       return res
         .status(403)
-        .json({ message: 'Unauthorized: You do not own this booking' });
+        .json({ message: "Unauthorized: You do not own this booking" });
     }
 
-    if (booking.paymentStatus !== 'CANCELLED' || booking.refundedAmount === 0) {
-      return res.status(400).json({ message: 'No refund to process' });
+    if (booking.paymentStatus !== "CANCELLED" || booking.refundedAmount === 0) {
+      return res.status(400).json({ message: "No refund to process" });
     }
 
-    if (booking.refundStatus !== 'PENDING') {
-      return res.status(400).json({ message: 'Refund already processed' });
+    if (booking.refundStatus !== "PENDING") {
+      return res.status(400).json({ message: "Refund already processed" });
     }
 
-    booking.refundStatus = action === 'accept' ? 'APPROVED' : 'REJECTED';
+    booking.refundStatus = action === "accept" ? "APPROVED" : "REJECTED";
 
-    if (action === 'accept') {
+    if (action === "accept") {
       booking.date = null;
       // console.log(
       //   `Processing refund of ${booking.refundedAmount} to UPI ID: ${booking.upiId}`
@@ -659,7 +687,7 @@ router.post('/sp/refund/action', async (req, res) => {
     res.status(200).json({ message: `Refund ${action}ed successfully` });
   } catch (error) {
     // console.error('Error processing refund action:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -667,18 +695,18 @@ router.post('/sp/refund/action', async (req, res) => {
 const updateSpRating = async (parlorEmail) => {
   try {
     const ratingsResult = await User.aggregate([
-      { $unwind: '$bookings' },
+      { $unwind: "$bookings" },
       {
         $match: {
-          'bookings.parlorEmail': parlorEmail,
-          'bookings.userRating': { $exists: true, $ne: null },
+          "bookings.parlorEmail": parlorEmail,
+          "bookings.userRating": { $exists: true, $ne: null },
         },
       },
       {
         $group: {
           _id: null,
-          ratings: { $push: '$bookings.userRating' },
-          averageRating: { $avg: '$bookings.userRating' },
+          ratings: { $push: "$bookings.userRating" },
+          averageRating: { $avg: "$bookings.userRating" },
           countPeople: { $sum: 1 },
         },
       },
@@ -701,25 +729,25 @@ const updateSpRating = async (parlorEmail) => {
     return { parlorEmail, averageRating, countPeople };
   } catch (error) {
     // console.error(`Error updating spRating for ${parlorEmail}:`, error);
-    return { parlorEmail, error: 'Failed to update spRating' };
+    return { parlorEmail, error: "Failed to update spRating" };
   }
 };
 
 // Get user ratings
-router.get('/get/userRatings', async (req, res) => {
+router.get("/get/userRatings", async (req, res) => {
   try {
     const ratingsByParlor = await User.aggregate([
-      { $unwind: '$bookings' },
-      { $match: { 'bookings.userRating': { $exists: true, $ne: null } } },
+      { $unwind: "$bookings" },
+      { $match: { "bookings.userRating": { $exists: true, $ne: null } } },
       {
         $group: {
-          _id: '$bookings.parlorEmail',
-          ratings: { $push: '$bookings.userRating' },
+          _id: "$bookings.parlorEmail",
+          ratings: { $push: "$bookings.userRating" },
         },
       },
       {
         $project: {
-          parlorEmail: '$_id',
+          parlorEmail: "$_id",
           ratings: 1,
           _id: 0,
         },
@@ -734,7 +762,7 @@ router.get('/get/userRatings', async (req, res) => {
       {}
     );
 
-    const autoUpdate = req.query.autoUpdate === 'true';
+    const autoUpdate = req.query.autoUpdate === "true";
     let updateResults = [];
     if (autoUpdate) {
       const updatePromises = ratingsByParlor.map(({ parlorEmail }) =>
@@ -749,22 +777,22 @@ router.get('/get/userRatings', async (req, res) => {
     });
   } catch (error) {
     // console.error('Error fetching user ratings:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Update spRating
-router.post('/update/spRating', async (req, res) => {
+router.post("/update/spRating", async (req, res) => {
   try {
     const { parlorEmail } = req.body;
 
     if (!parlorEmail) {
-      return res.status(400).json({ message: 'parlorEmail is required' });
+      return res.status(400).json({ message: "parlorEmail is required" });
     }
 
     const salon = await Shop.findOne({ email: parlorEmail });
     if (!salon) {
-      return res.status(404).json({ message: 'Salon not found' });
+      return res.status(404).json({ message: "Salon not found" });
     }
 
     const result = await updateSpRating(parlorEmail);
@@ -774,20 +802,20 @@ router.post('/update/spRating', async (req, res) => {
     }
 
     const ratingsResult = await User.aggregate([
-      { $unwind: '$bookings' },
+      { $unwind: "$bookings" },
       {
         $match: {
-          'bookings.parlorEmail': parlorEmail,
-          'bookings.userRating': { $exists: true, $ne: null },
+          "bookings.parlorEmail": parlorEmail,
+          "bookings.userRating": { $exists: true, $ne: null },
         },
       },
-      { $group: { _id: null, ratings: { $push: '$bookings.userRating' } } },
+      { $group: { _id: null, ratings: { $push: "$bookings.userRating" } } },
     ]);
 
     const ratings = ratingsResult.length > 0 ? ratingsResult[0].ratings : [];
 
     res.status(200).json({
-      message: 'spRating updated successfully',
+      message: "spRating updated successfully",
       parlorEmail,
       ratings,
       averageRating: result.averageRating,
@@ -795,17 +823,17 @@ router.post('/update/spRating', async (req, res) => {
     });
   } catch (error) {
     // console.error('Error updating spRating:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Placeholder for admin dashboard route (if needed)
-router.get('/admin/all/admins/data', async (req, res) => {
+router.get("/admin/all/admins/data", async (req, res) => {
   try {
     res.json([]); // Return empty array as per previous implementation
   } catch (error) {
     // console.error('Error fetching admin data:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -813,39 +841,39 @@ router.get('/admin/all/admins/data', async (req, res) => {
 
 // Nodemailer configuration
 const mailTransporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: "smtp.gmail.com",
   port: 587,
   secure: false,
   auth: {
-    user: 'bongusaicustq11@gmail.com',
-    pass: 'hnvb huyg egke hqjr',
+    user: "bongusaicustq11@gmail.com",
+    pass: "hnvb huyg egke hqjr",
   },
 });
 
 // Forgot Password - Send OTP
-router.post('/ForgotPassword/SendOTP', async (req, res) => {
+router.post("/ForgotPassword/SendOTP", async (req, res) => {
   const { email, OTP, designation } = req.body;
 
   if (!email || !OTP || !designation) {
     return res
       .status(400)
-      .json({ message: 'Email, OTP, and designation are required' });
+      .json({ message: "Email, OTP, and designation are required" });
   }
 
   try {
     let user;
-    if (designation === 'User') {
+    if (designation === "User") {
       user = await User.findOne({ email });
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(404).json({ message: "User not found" });
       }
-    } else if (designation === 'Shop') {
+    } else if (designation === "Shop") {
       user = await Shop.findOne({ email });
       if (!user) {
-        return res.status(404).json({ message: 'Shop not found' });
+        return res.status(404).json({ message: "Shop not found" });
       }
     } else {
-      return res.status(400).json({ message: 'Invalid designation' });
+      return res.status(400).json({ message: "Invalid designation" });
     }
 
     // Store OTP and timestamp
@@ -855,38 +883,38 @@ router.post('/ForgotPassword/SendOTP', async (req, res) => {
 
     // Send OTP email
     const mailOptions = {
-      from: 'bongusaicustq11@gmail.com',
+      from: "bongusaicustq11@gmail.com",
       to: email,
-      subject: 'Password Reset OTP',
+      subject: "Password Reset OTP",
       text: `Your OTP for password reset is: ${OTP}. It is valid for 5 minutes.`,
     };
 
     await mailTransporter.sendMail(mailOptions);
-    res.status(200).json({ message: 'OTP sent successfully' });
+    res.status(200).json({ message: "OTP sent successfully" });
   } catch (error) {
     // console.error("Error sending OTP:", error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Get OTP for verification
-router.post('/get/otp', async (req, res) => {
+router.post("/get/otp", async (req, res) => {
   const { email, designation } = req.body;
 
   if (!email || !designation) {
     return res
       .status(400)
-      .json({ message: 'Email and designation are required' });
+      .json({ message: "Email and designation are required" });
   }
 
   try {
     let user;
-    if (designation === 'User') {
+    if (designation === "User") {
       user = await User.findOne({ email });
-    } else if (designation === 'Shop') {
+    } else if (designation === "Shop") {
       user = await Shop.findOne({ email });
     } else {
-      return res.status(400).json({ message: 'Invalid designation' });
+      return res.status(400).json({ message: "Invalid designation" });
     }
 
     if (!user) {
@@ -894,7 +922,7 @@ router.post('/get/otp', async (req, res) => {
     }
 
     if (!user.otp || !user.otpTimestamp) {
-      return res.status(400).json({ message: 'No OTP found' });
+      return res.status(400).json({ message: "No OTP found" });
     }
 
     // Check if OTP is expired (5 minutes = 300,000 ms)
@@ -906,34 +934,34 @@ router.post('/get/otp', async (req, res) => {
       user.otp = null;
       user.otpTimestamp = null;
       await user.save();
-      return res.status(400).json({ message: 'OTP has expired' });
+      return res.status(400).json({ message: "OTP has expired" });
     }
 
     res.status(200).json({ otp: user.otp });
   } catch (error) {
     // console.error("Error fetching OTP:", error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Update Password
-router.put('/update/password', async (req, res) => {
+router.put("/update/password", async (req, res) => {
   const { email, designation, password } = req.body;
 
   if (!email || !designation || !password) {
     return res
       .status(400)
-      .json({ message: 'Email, designation, and password are required' });
+      .json({ message: "Email, designation, and password are required" });
   }
 
   try {
     let user;
-    if (designation === 'User') {
+    if (designation === "User") {
       user = await User.findOne({ email });
-    } else if (designation === 'Shop') {
+    } else if (designation === "Shop") {
       user = await Shop.findOne({ email });
     } else {
-      return res.status(400).json({ message: 'Invalid designation' });
+      return res.status(400).json({ message: "Invalid designation" });
     }
 
     if (!user) {
@@ -948,22 +976,22 @@ router.put('/update/password', async (req, res) => {
 
     // Send confirmation email
     const mailOptions = {
-      from: 'bongusaicustq11@gmail.com',
+      from: "bongusaicustq11@gmail.com",
       to: email,
-      subject: 'Password Updated Successfully',
-      text: 'Your password has been updated successfully. If you did not initiate this change, please contact support immediately.',
+      subject: "Password Updated Successfully",
+      text: "Your password has been updated successfully. If you did not initiate this change, please contact support immediately.",
     };
 
     await mailTransporter.sendMail(mailOptions);
-    res.status(200).json({ message: 'Password updated successfully' });
+    res.status(200).json({ message: "Password updated successfully" });
   } catch (error) {
     // console.error("Error updating password:", error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // POST: Create a new enquiry
-router.post('/enquiries', async (req, res) => {
+router.post("/enquiries", async (req, res) => {
   try {
     const { email, parlorEmail, message } = req.body;
 
@@ -971,13 +999,13 @@ router.post('/enquiries', async (req, res) => {
     if (!email || !parlorEmail || !message) {
       return res
         .status(400)
-        .json({ message: 'Email, parlor email, and message are required.' });
+        .json({ message: "Email, parlor email, and message are required." });
     }
 
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
+      return res.status(404).json({ message: "User not found." });
     }
 
     // Create new enquiry
@@ -991,21 +1019,21 @@ router.post('/enquiries', async (req, res) => {
     user.enquiries.push(newEnquiry);
     await user.save();
 
-    res.status(201).json({ message: 'Enquiry created successfully.' });
+    res.status(201).json({ message: "Enquiry created successfully." });
   } catch (error) {
     // console.error("Error creating enquiry:", error);
-    res.status(500).json({ message: 'Server error.' });
+    res.status(500).json({ message: "Server error." });
   }
 });
 
 // Get all enquiries for a specific parlorEmail SP
-router.get('/enquiries/:parlorEmail', async (req, res) => {
+router.get("/enquiries/:parlorEmail", async (req, res) => {
   try {
     const { parlorEmail } = req.params;
 
     // Find users with enquiries matching the parlorEmail
     const users = await User.find(
-      { 'enquiries.parlorEmail': parlorEmail },
+      { "enquiries.parlorEmail": parlorEmail },
       { enquiries: 1, name: 1, email: 1, phone: 1 } // Project only necessary fields
     ).lean();
 
@@ -1029,41 +1057,41 @@ router.get('/enquiries/:parlorEmail', async (req, res) => {
     res.status(200).json(enquiries);
   } catch (error) {
     // console.error("Error fetching enquiries:", error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Update enquiry status or add spMessage SP
-router.put('/enquiries/:enquiryId', async (req, res) => {
+router.put("/enquiries/:enquiryId", async (req, res) => {
   try {
     const { enquiryId } = req.params;
     const { status, spMessage } = req.body;
 
     // Find the user containing the enquiry
     const user = await User.findOneAndUpdate(
-      { 'enquiries._id': enquiryId },
+      { "enquiries._id": enquiryId },
       {
         $set: {
-          'enquiries.$.status': status || 'new',
-          'enquiries.$.spMessage': spMessage || '',
+          "enquiries.$.status": status || "new",
+          "enquiries.$.spMessage": spMessage || "",
         },
       },
       { new: true }
     );
 
     if (!user) {
-      return res.status(404).json({ message: 'Enquiry not found' });
+      return res.status(404).json({ message: "Enquiry not found" });
     }
 
-    res.status(200).json({ message: 'Enquiry updated successfully' });
+    res.status(200).json({ message: "Enquiry updated successfully" });
   } catch (error) {
     // console.error("Error updating enquiry:", error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Delete an enquiry SP
-router.delete('/enquiries/:enquiryId', async (req, res) => {
+router.delete("/enquiries/:enquiryId", async (req, res) => {
   try {
     const { enquiryId } = req.params;
 
@@ -1071,49 +1099,49 @@ router.delete('/enquiries/:enquiryId', async (req, res) => {
 
     // Find the user and pull the enquiry
     const user = await User.findOneAndUpdate(
-      { 'enquiries._id': enquiryId },
+      { "enquiries._id": enquiryId },
       { $pull: { enquiries: { _id: enquiryId } } },
       { new: true }
     );
 
     if (!user) {
-      return res.status(404).json({ message: 'Enquiry not found' });
+      return res.status(404).json({ message: "Enquiry not found" });
     }
 
-    res.status(200).json({ message: 'Enquiry deleted successfully' });
+    res.status(200).json({ message: "Enquiry deleted successfully" });
   } catch (error) {
     // console.error("Error deleting enquiry:", error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // GET user enquiries by email ----> USer
-router.get('/userEnquiries', async (req, res) => {
+router.get("/userEnquiries", async (req, res) => {
   try {
     const { email } = req.query;
     if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+      return res.status(400).json({ message: "Email is required" });
     }
 
-    const user = await User.findOne({ email }).select('enquiries');
+    const user = await User.findOne({ email }).select("enquiries");
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     const formattedEnquiries = await Promise.all(
       user.enquiries.map(async (enquiry) => {
         const shop = await Shop.findOne({ email: enquiry.parlorEmail }).select(
-          'shopName'
+          "shopName"
         );
         return {
           id: enquiry._id.toString(),
-          serviceRequested: enquiry.userMessage || 'N/A',
-          shopName: shop ? shop.shopName : 'N/A',
+          serviceRequested: enquiry.userMessage || "N/A",
+          shopName: shop ? shop.shopName : "N/A",
           shopEmail: enquiry.parlorEmail,
 
           dateSubmitted: enquiry.createdAt,
           status: enquiry.status,
-          spMessage: enquiry.spMessage || 'N/A',
+          spMessage: enquiry.spMessage || "N/A",
         };
       })
     );
@@ -1121,37 +1149,37 @@ router.get('/userEnquiries', async (req, res) => {
     res.json(formattedEnquiries);
   } catch (error) {
     // console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 //userProfile
-router.get('/userProfile/:email', async (req, res) => {
+router.get("/userProfile/:email", async (req, res) => {
   try {
     const { email } = req.params;
     // const user = await User.findOne({ email });
-    const user = await User.findOne({ email: new RegExp(`^${email}$`, 'i') });
+    const user = await User.findOne({ email: new RegExp(`^${email}$`, "i") });
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
     res.json(user);
   } catch (error) {
     // console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Update user profile
 
 // routes/users.js or wherever your routes are defined
-router.put('/updateProfile/:email', async (req, res) => {
+router.put("/updateProfile/:email", async (req, res) => {
   try {
     const { email } = req.params;
     const updateData = req.body;
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     // Prevent changing these fields
     delete updateData.designation;
@@ -1163,13 +1191,11 @@ router.put('/updateProfile/:email', async (req, res) => {
 
     // Return user data without the hashed password
     const { password, ...userData } = user.toObject();
-    res.json({ message: 'Profile updated successfully', user: userData });
+    res.json({ message: "Profile updated successfully", user: userData });
   } catch (error) {
-    console.error('Update error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Update error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
-
-
 
 module.exports = router;

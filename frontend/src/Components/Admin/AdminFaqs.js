@@ -110,6 +110,8 @@ const formatTimeAgo = (date) => {
   }
 };
 
+const BASE_URL = process.env.REACT_APP_API_URL;
+
 const AdminFaqs = () => {
   const [faqs, setFaqs] = useState([]);
   const [pendingFaqs, setPendingFaqs] = useState([]);
@@ -125,19 +127,19 @@ const AdminFaqs = () => {
   useEffect(() => {
     // Fetch answered FAQs
     axios
-      .get('http://localhost:5000/api/terms/faqs')
+      .get(`${BASE_URL}/api/terms/faqs`)
       .then((res) => setFaqs(res.data))
       .catch((err) => console.error(err));
 
     // Fetch pending FAQs
     axios
-      .get('http://localhost:5000/api/terms/pending-faqs')
+      .get(`${BASE_URL}/api/terms/pending-faqs`)
       .then((res) => setPendingFaqs(res.data))
       .catch((err) => console.error(err));
 
     // Fetch terms
     axios
-      .get('http://localhost:5000/api/terms/terms')
+      .get(`${BASE_URL}/api/terms/terms`)
       .then((res) => setTerms(res.data))
       .catch((err) => console.error(err));
   }, []);
@@ -147,7 +149,7 @@ const AdminFaqs = () => {
     if (!answer?.trim()) return;
 
     try {
-      const response = await axios.put(`http://localhost:5000/api/terms/faqs/${faqId}`, { answer });
+      const response = await axios.put(`${BASE_URL}/api/terms/faqs/${faqId}`, { answer });
       const updatedFaq = response.data;
       setPendingFaqs(pendingFaqs.filter((faq) => faq._id !== faqId));
       setFaqs([...faqs, updatedFaq]);
@@ -160,7 +162,7 @@ const AdminFaqs = () => {
   const handleAddTerm = async () => {
     if (!newTerm.trim()) return;
     try {
-      const res = await axios.post('http://localhost:5000/api/terms/terms', { term: newTerm });
+      const res = await axios.post(`${BASE_URL}/api/terms/terms`, { term: newTerm });
       setTerms([...terms, res.data]);
       setNewTerm('');
     } catch (err) {
@@ -171,7 +173,7 @@ const AdminFaqs = () => {
   const handleEditTerm = async (termId) => {
     if (!editTermText.trim()) return;
     try {
-      const res = await axios.put(`http://localhost:5000/api/terms/terms/${termId}`, { term: editTermText });
+      const res = await axios.put(`${BASE_URL}/api/terms/terms/${termId}`, { term: editTermText });
       setTerms(terms.map((term) => (term._id === termId ? res.data : term)));
       setEditTermId(null);
       setEditTermText('');
@@ -182,7 +184,7 @@ const AdminFaqs = () => {
 
   const handleDeleteTerm = async (termId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/terms/terms/${termId}`, {
+      await axios.delete(`${BASE_URL}/api/terms/terms/${termId}`, {
         headers: {
           'user-email': localStorage.getItem('email'),
         },
@@ -198,7 +200,7 @@ const AdminFaqs = () => {
   const handleEditFaq = async (faqId) => {
     if (!editFaqText.trim()) return;
     try {
-      const res = await axios.put(`http://localhost:5000/api/terms/faqs/${faqId}`, { answer: editFaqText });
+      const res = await axios.put(`${BASE_URL}/api/terms/faqs/${faqId}`, { answer: editFaqText });
       setFaqs(faqs.map((faq) => (faq._id === faqId ? res.data : faq)));
       setEditFaqId(null);
       setEditFaqText('');
@@ -210,7 +212,7 @@ const AdminFaqs = () => {
 
   const handleDeleteFaq = async (faqId, isPending = false) => {
     try {
-      await axios.delete(`http://localhost:5000/api/terms/faqs/${faqId}`, {
+      await axios.delete(`${BASE_URL}/api/terms/faqs/${faqId}`, {
         headers: {
           'user-email': localStorage.getItem('email'),
         },

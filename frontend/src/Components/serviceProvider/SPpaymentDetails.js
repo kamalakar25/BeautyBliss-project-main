@@ -654,7 +654,7 @@ const BookingPage = () => {
                 />
                 <FilterToggleButton
                   onClick={handleToggleFilters}
-                  style={{ borderRadius: "20px" }}
+                  style={{ borderRadius: "20px", marginTop: "40px" }}
                 >
                   <FilterListIcon />
                 </FilterToggleButton>
@@ -682,7 +682,7 @@ const BookingPage = () => {
                   flexDirection: { xs: "column", sm: "row" },
                   flexWrap: { sm: "wrap" },
                   justifyContent: "center",
-                  alignItems: "center",
+                  alignItems: "end",
                   gap: { xs: 2, sm: 3 },
                   width: "100%",
                 }}
@@ -695,6 +695,7 @@ const BookingPage = () => {
                   onChange={handleSearchChange}
                   sx={{
                     p: "10px",
+                    mt: "0px",
                     borderRadius: "8px",
                     border: "2px solid #201548",
                     backgroundColor: "rgba(255, 255, 255, 0.9)",
@@ -703,7 +704,6 @@ const BookingPage = () => {
                     width: { xs: "100%", sm: "200px" },
                     maxWidth: "200px",
                     color: "#0e0f0f",
-                    mt: { xs: 0, sm: "20px" },
                     textAlign: "center",
                     display: { xs: "none", lg: "block" },
                     transition: "all 0.3s ease",

@@ -29,95 +29,6 @@ const BookSlot = () => {
   const location = useLocation();
   const parlor = location.state?.parlor || {};
 
-  // Define services by designation
-  const servicesByDesignation = {
-    Salon: {
-      "Hair Cut": [
-        "Men's Haircut",
-        "Women's Haircut",
-        "Kids' Haircut",
-        "Beard Trim",
-        "Layered/Step Cut",
-        "Fringe/Bangs Cut",
-      ],
-      Facial: [
-        "Clean-Up Facial",
-        "Fruit Facial",
-        "Gold Facial",
-        "Anti-Aging Facial",
-        "Acne Control Facial",
-        "Instant Glow Facial",
-      ],
-      "Hair Color": [
-        "Root Touch-up",
-        "Global Hair Color",
-        "Highlights / Streaks",
-        "Balayage",
-        "Ombre",
-        "Fashion Shades",
-      ],
-      Shaving: [
-        "Regular Shave",
-        "Luxury Shave (with hot towel)",
-        "Beard Shaping",
-        "Razor Finish",
-        "Head Shaving",
-      ],
-    },
-    Beauty_Parler: {
-      "Hair Stylkjng": [
-        "Blow Dry",
-        "Straightening",
-        "Curling",
-        "Hair Braiding",
-        "Updos & Buns",
-        "Temporary Hair Extensions",
-      ],
-      Bridal: [
-        "Bridal Makeup (HD / Airbrush)",
-        "Pre-Bridal Package",
-        "Saree Draping",
-        "Bridal Mehendi",
-        "Bridal Hairdo",
-      ],
-      Waxing: [
-        "Full Arms Waxing",
-        "Full Legs Waxing",
-        "Underarms Waxing",
-        "Bikini Wax",
-        "Full Body Wax",
-        "Face Waxing (Upper Lip, Chin, Forehead)",
-      ],
-      Pedicure: [
-        "Regular Pedicure",
-        "Spa Pedicure",
-        "Gel Pedicure",
-        "Paraffin Pedicure",
-        "French Pedicure",
-        "Cracked Heel Treatment",
-      ],
-    },
-    Doctor: {
-      "Hair Treatments": [
-        "PRP Therapy (Platelet-Rich Plasma)",
-        "Hair Transplant",
-        "Anti-Dandruff Treatment",
-        "Hair Fall Control Therapy",
-        "Laser Hair Regrowth",
-        "Scalp Micropigmentation",
-      ],
-      "Skin Treatments": [
-        "Chemical Peels",
-        "Botox & Fillers",
-        "Laser Hair Removal",
-        "Pigmentation Treatment",
-        "Acne Scar Removal",
-        "Skin Rejuvenation Therapy",
-        "Microneedling",
-      ],
-    },
-  };
-
   // Initialize form data
   const [formData, setFormData] = useState({
     name: "",
@@ -127,8 +38,13 @@ const BookSlot = () => {
     amount: parlor.price || "",
     relatedServices: [],
     favoriteEmployee: "",
-    duration: 60,
+    duration: 0,
   });
+
+  // State for service details from backend
+  const [serviceDetails, setServiceDetails] = useState([]);
+  const [serviceAll, setServiceAll] = useState([]);
+  const [openModals, setOpenModals] = useState({});
 
   // State for terms agreement
   const [termsAgreed, setTermsAgreed] = useState(false);
@@ -149,9 +65,6 @@ const BookSlot = () => {
   // State for username
   const [username, setUsername] = useState("");
 
-  // State for modal open/close
-  const [openModals, setOpenModals] = useState({});
-
   // State for parlor timings
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
 
@@ -164,33 +77,74 @@ const BookSlot = () => {
   const favoriteEmployeeRef = useRef(null);
   const termsRef = useRef(null);
 
-  // Function to generate time slots based on start and end times
-  const generateTimeSlots = (startTime, endTime, interval = 60) => {
-    const slots = [];
-    const start = parseTime(startTime);
-    const end = parseTime(endTime);
+  // Fetch service details
+  useEffect(() => {
+    const serviceId = parlor.serviceId;
+    const fetchServiceDetails = async () => {
+      try {
+        const response = await axios.get(
+          `${BASE_URL}/api/users/shop/by-service/${serviceId}`
+        );
+        setServiceAll(response.data.services);
+      } catch (error) {
+        console.error("Error fetching service details:", error);
+        setErrors((prev) => ({
+          ...prev,
+          api: "Failed to fetch service details. Please try again.",
+        }));
+      }
+    };
 
-    for (let time = start; time < end; time += interval) {
-      const slotStart = formatTime(time);
-      const slotEnd = formatTime(time + interval);
-      slots.push(`${slotStart}-${slotEnd}`);
+    if (serviceId) {
+      fetchServiceDetails();
     }
-    return slots;
-  };
+  }, [parlor.serviceId]);
 
-  // Helper to parse time string to minutes
-  const parseTime = (timeStr) => {
-    const [hours, minutes] = timeStr.split(":").map(Number);
-    return hours * 60 + minutes;
-  };
+  // Fetch parlor services
+  useEffect(() => {
+    const fetchServiceDetails = async () => {
+      if (!parlor.email) return;
+      try {
+        const response = await axios.get(
+          `${BASE_URL}/api/admin/get-services/${parlor.email}`
+        );
+        setServiceDetails(response.data);
+      } catch (error) {
+        setErrors((prev) => ({
+          ...prev,
+          api: "Failed to fetch service details. Please try again.",
+        }));
+        setServiceDetails([]);
+      }
+    };
 
-  // Helper to format minutes to time string
-  const formatTime = (minutes) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours.toString().padStart(2, "0")}:${mins
-      .toString()
-      .padStart(2, "0")}`;
+    fetchServiceDetails();
+  }, [parlor.email]);
+
+  // Fetch username
+  const fetchUsername = async () => {
+    const userEmail = localStorage.getItem("email");
+    if (!userEmail) {
+      setErrors((prev) => ({
+        ...prev,
+        api: "User email not found. Please log in.",
+      }));
+      return;
+    }
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/api/users/bookings/${userEmail}`
+      );
+      setUsername(response.data.username);
+      setFormData((prev) => ({ ...prev, name: response.data.username }));
+    } catch (error) {
+      setUsername("");
+      setFormData((prev) => ({ ...prev, name: "" }));
+      setErrors((prev) => ({
+        ...prev,
+        api: "Failed to fetch username. Please try again.",
+      }));
+    }
   };
 
   // Fetch parlor timings
@@ -222,32 +176,6 @@ const BookSlot = () => {
         api: "Failed to fetch parlor timings. Please try again.",
       }));
       setAvailableTimeSlots([]);
-    }
-  };
-
-  // Fetch username
-  const fetchUsername = async () => {
-    const userEmail = localStorage.getItem("email");
-    if (!userEmail) {
-      setErrors((prev) => ({
-        ...prev,
-        api: "User email not found. Please log in.",
-      }));
-      return;
-    }
-    try {
-      const response = await axios.get(
-        `${BASE_URL}/api/users/bookings/${userEmail}`
-      );
-      setUsername(response.data.username);
-      setFormData((prev) => ({ ...prev, name: response.data.username }));
-    } catch (error) {
-      setUsername("");
-      setFormData((prev) => ({ ...prev, name: "" }));
-      setErrors((prev) => ({
-        ...prev,
-        api: "Failed to fetch username. Please try again.",
-      }));
     }
   };
 
@@ -291,13 +219,10 @@ const BookSlot = () => {
   // Fetch terms and conditions
   const fetchTerms = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/terms/terms");
-      // Remove duplicates based on the 'term' property
+      const response = await axios.get(`${BASE_URL}/api/terms/terms`);
       const uniqueTerms = Array.from(
         new Set(response.data.map((item) => item.term))
-      ).map((term) =>
-        response.data.find((item) => item.term === term)
-      );
+      ).map((term) => response.data.find((item) => item.term === term));
       setTerms(uniqueTerms);
     } catch (error) {
       setErrors((prev) => ({
@@ -308,18 +233,72 @@ const BookSlot = () => {
     }
   };
 
-  // Fetch username, parlor timings, and terms on component mount
+  // Generate time slots
+  const generateTimeSlots = (startTime, endTime, interval = 60) => {
+    const slots = [];
+    const start = parseTime(startTime);
+    const end = parseTime(endTime);
+
+    for (let time = start; time < end; time += interval) {
+      const slotStart = formatTime(time);
+      const slotEnd = formatTime(time + interval);
+      slots.push(`${slotStart}-${slotEnd}`);
+    }
+    return slots;
+  };
+
+  const parseTime = (timeStr) => {
+    const [hours, minutes] = timeStr.split(":").map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const formatTime = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, "0")}:${mins
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  // Calculate total duration
+  const calculateTotalDuration = () => {
+    if (!serviceDetails.length) return 0;
+
+    const primaryService = serviceDetails.find(
+      (svc) =>
+        svc.serviceName === formData.service &&
+        (!parlor.style || svc.style === parlor.style)
+    );
+    let totalDuration = primaryService?.duration || 0;
+
+    formData.relatedServices.forEach((relatedService) => {
+      const relatedServiceDetail = serviceDetails.find(
+        (svc) =>
+          svc.serviceName === relatedService || svc.style === relatedService
+      );
+      if (relatedServiceDetail) {
+        totalDuration += relatedServiceDetail.duration || 0;
+      }
+    });
+
+    return totalDuration;
+  };
+
+  // Update duration
+  useEffect(() => {
+    const totalDuration = calculateTotalDuration();
+    setFormData((prev) => ({
+      ...prev,
+      duration: totalDuration,
+    }));
+  }, [serviceDetails, formData.service, formData.relatedServices]);
+
+  // Fetch data on component mount
   useEffect(() => {
     fetchUsername();
     fetchParlorTimings();
     fetchTerms();
-  }, [parlor.email]);
-
-  // Fetch manPower data
-  useEffect(() => {
-    if (parlor.email) {
-      fetchManPower();
-    }
+    fetchManPower();
   }, [parlor.email]);
 
   // Fetch booked slots
@@ -331,30 +310,31 @@ const BookSlot = () => {
     }
   }, [formData.favoriteEmployee, formData.date]);
 
-  // Update duration
-  useEffect(() => {
-    const baseDuration = 60;
-    const additionalDuration = formData.relatedServices.length * 30;
-    setFormData((prev) => ({
-      ...prev,
-      duration: baseDuration + additionalDuration,
-    }));
-  }, [formData.relatedServices]);
-
   // Calculate total amount
   const calculateTotalAmount = () => {
     const baseAmount = parseFloat(formData.amount) || 0;
-    return baseAmount;
+    let totalAmount = baseAmount;
+
+    formData.relatedServices.forEach((relatedService) => {
+      const relatedServiceDetail = serviceDetails.find(
+        (svc) =>
+          svc.serviceName === relatedService || svc.style === relatedService
+      );
+      if (relatedServiceDetail) {
+        totalAmount += parseFloat(relatedServiceDetail.price) || 0;
+      }
+    });
+
+    return totalAmount;
   };
 
-  // Convert time slot to minutes for comparison
+  // Time slot utilities
   const timeToMinutes = (time) => {
     const [start] = time.split("-");
     const [hours, minutes] = start.split(":").map(Number);
     return hours * 60 + minutes;
   };
 
-  // Check if a slot is available considering duration
   const isSlotAvailable = (slot, duration) => {
     const slotStart = timeToMinutes(slot);
     const slotEnd = slotStart + duration;
@@ -370,7 +350,6 @@ const BookSlot = () => {
     return true;
   };
 
-  // Check if a slot with duration overlaps with booked slots
   const isSlotAvailableWithDuration = (selectedTime, duration) => {
     if (!selectedTime) return true;
     const slotStart = timeToMinutes(selectedTime);
@@ -403,26 +382,26 @@ const BookSlot = () => {
     setErrors((prev) => ({ ...prev, terms: "" }));
   };
 
-  // Handle terms modal open/close
   const handleTermsModalToggle = () => {
     setTermsModalOpen(!termsModalOpen);
   };
 
-  // Handle checkbox changes for related services
+  // Handle related service changes
   const handleRelatedServiceChange = (e) => {
     const { value, checked } = e.target;
 
     if (checked) {
       const newRelatedServices = [...formData.relatedServices, value];
-      const baseDuration = 60;
-      const additionalDuration = newRelatedServices.length * 30;
-      const newDuration = baseDuration + additionalDuration;
+      const totalDuration = calculateTotalDurationForServices([
+        ...newRelatedServices,
+        formData.service,
+      ]);
 
-      if (!isSlotAvailableWithDuration(formData.time, newDuration)) {
+      if (!isSlotAvailableWithDuration(formData.time, totalDuration)) {
         setErrors((prev) => ({
           ...prev,
           relatedServices:
-            "Cannot add this service: Selected time is busy. Scheduling alternative slot.",
+            "Cannot add this service: Selected time is busy. Please select another slot.",
         }));
         return;
       }
@@ -443,7 +422,23 @@ const BookSlot = () => {
     }
   };
 
-  // Handle removal of a selected service
+  const calculateTotalDurationForServices = (services) => {
+    let totalDuration = 0;
+    services.forEach((service) => {
+      const serviceDetail = serviceDetails.find(
+        (svc) =>
+          svc.serviceName === service ||
+          svc.style === service ||
+          (svc.serviceName === formData.service &&
+            (!parlor.style || svc.style === parlor.style))
+      );
+      if (serviceDetail) {
+        totalDuration += serviceDetail.duration || 0;
+      }
+    });
+    return totalDuration;
+  };
+
   const handleRemoveService = (serviceToRemove) => {
     setFormData((prev) => ({
       ...prev,
@@ -454,7 +449,6 @@ const BookSlot = () => {
     setErrors((prev) => ({ ...prev, relatedServices: "" }));
   };
 
-  // Handle modal open/close
   const handleToggleModal = (category) => {
     setOpenModals((prev) => ({
       ...prev,
@@ -463,7 +457,7 @@ const BookSlot = () => {
     setErrors((prev) => ({ ...prev, relatedServices: "" }));
   };
 
-  // Validate form data
+  // Validate form
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = "Name is required";
@@ -479,6 +473,8 @@ const BookSlot = () => {
         "Selected time slot is not available for the required duration";
     if (!termsAgreed)
       newErrors.terms = "You must agree to the terms and conditions";
+    if (formData.duration === 0)
+      newErrors.duration = "Service duration not available";
 
     if (Object.keys(newErrors).length > 0) {
       const firstErrorField = Object.keys(newErrors)[0];
@@ -505,7 +501,7 @@ const BookSlot = () => {
     return newErrors;
   };
 
-  // Handle booking slot
+  // Handle booking
   const handleBookSlot = async () => {
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -530,7 +526,7 @@ const BookSlot = () => {
     }
   };
 
-  // Parse location for distance calculation
+  // Parse location for Google Maps
   const parseLocation = (location) => {
     if (!location || typeof location !== "string") return null;
     const match = location.match(/Lat:\s*([\d.-]+),\s*Lon:\s*([\d.-]+)/i);
@@ -541,172 +537,174 @@ const BookSlot = () => {
     return { lat, lon };
   };
 
-  // Generate Google Maps URL
   const getGoogleMapsUrl = (location) => {
     const coords = parseLocation(location);
     if (!coords) return "#";
     return `https://www.google.com/maps?q=${coords.lat},${coords.lon}`;
   };
 
-  // Render services in modals
-  const renderServiceCheckboxes = () => {
-    const designation = parlor.designation || "";
-    const services = servicesByDesignation[designation] || {};
+  // Group services by serviceName
+  const groupedServices = serviceAll.reduce((acc, service) => {
+    const category = service.serviceName || "Unnamed Service";
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(service);
+    return acc;
+  }, {});
 
+  // Render service checkboxes
+const renderServiceCheckboxes = () => {
+  const categories = Object.keys(groupedServices);
+
+  if (categories.length === 0) {
     return (
-      <Box className="services-grid">
-        {Object.keys(services).map((category) => (
+      <Typography
+        variant="body1"
+        sx={{
+          mt: 2,
+          color: "#666",
+          fontStyle: "italic",
+        }}
+      >
+        No Additional Services
+      </Typography>
+    );
+  }
+
+  return (
+    <Box className="services-grid">
+      {categories.map((category) => (
+        <Box key={category}>
           <Box
-            key={category}
-            className="service-category"
             sx={{
+              display: "flex",
+              alignItems: "center",
+              cursor: "pointer",
+              "&:hover": { color: "#201548" },
               transition: "all 0.3s ease",
-              animation: "slideIn 0.5s ease-out",
-              border: "1px solid #e8ecef",
-              borderRadius: "6px",
-              padding: "0.5rem",
-              backgroundColor: "#ffffff",
-              "&:hover": {
-                transform: "translateY(-3px)",
-                boxShadow: "0 3px 10px rgba(0,0,0,0.08)",
-                borderColor: "#201548",
-              },
+            }}
+            onClick={() => handleToggleModal(category)}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                color: "#0e0f0f",
+                fontWeight: "500",
+                fontSize: "0.9rem",
+                flexGrow: 1,
+              }}
+            >
+              {category}
+            </Typography>
+            <IconButton sx={{ padding: "0.25rem" }}>
+              {openModals[category] ? (
+                <ExpandLess sx={{ color: "#201548", fontSize: "1rem" }} />
+              ) : (
+                <ExpandMore sx={{ color: "#201548", fontSize: "1rem" }} />
+              )}
+            </IconButton>
+          </Box>
+          <Modal
+            open={openModals[category] || false}
+            onClose={() => handleToggleModal(category)}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <Box
               sx={{
-                display: "flex",
-                alignItems: "center",
-                cursor: "pointer",
-                "&:hover": { color: "#201548" },
-                transition: "all 0.3s ease",
+                bgcolor: "#ffffff",
+                p: 3,
+                borderRadius: 3,
+                maxWidth: 450,
+                maxHeight: "80vh",
+                overflowY: "auto",
+                boxShadow: "0 6px 24px rgba(0,0,0,0.12)",
+                transform: "scale(0.9)",
+                animation: "modalPop 0.4s ease-out forwards",
+                "&:hover": { transform: "scale(1)" },
+                transition: "transform 0.3s ease-in-out",
               }}
-              onClick={() => handleToggleModal(category)}
             >
               <Typography
-                variant="h6"
+                variant="h5"
                 sx={{
+                  mb: 2,
                   color: "#0e0f0f",
-                  fontWeight: "500",
-                  fontSize: "0.9rem",
-                  flexGrow: 1,
+                  fontWeight: "600",
+                  fontSize: "1.2rem",
                 }}
               >
                 {category}
               </Typography>
-              <IconButton sx={{ padding: "0.25rem" }}>
-                {openModals[category] ? (
-                  <ExpandLess sx={{ color: "#201548", fontSize: "1rem" }} />
-                ) : (
-                  <ExpandMore sx={{ color: "#201548", fontSize: "1rem" }} />
-                )}
-              </IconButton>
-            </Box>
-            <Modal
-              open={openModals[category] || false}
-              onClose={() => handleToggleModal(category)}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Box
+              <FormGroup>
+                {groupedServices[category].map((service, index) => (
+                  <FormControlLabel
+                    key={index}
+                    control={
+                      <Checkbox
+                        checked={formData.relatedServices.includes(
+                          service.style || service.serviceName
+                        )}
+                        onChange={handleRelatedServiceChange}
+                        value={service.style || service.serviceName}
+                        sx={{
+                          color: "#d0d0d0",
+                          "&.Mui-checked": { color: "#201548" },
+                        }}
+                      />
+                    }
+                    label={
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <Typography
+                          sx={{ fontSize: "0.9rem", color: "#0e0f0f" }}
+                        >
+                          {service.style || service.serviceName}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            ml: 2,
+                            fontSize: "0.8rem",
+                            color: "#666",
+                          }}
+                        >
+                          (₹{service.price}, {service.duration} min)
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                ))}
+              </FormGroup>
+              <Button
+                variant="contained"
+                onClick={() => handleToggleModal(category)}
+                fullWidth
                 sx={{
-                  bgcolor: "#ffffff",
-                  p: 2,
-                  borderRadius: 3,
-                  maxWidth: 350,
-                  maxHeight: "80vh",
-                  overflowY: "auto",
-                  boxShadow: "0 6px 24px rgba(0,0,0,0.12)",
-                  transform: "scale(0.9)",
-                  animation: "modalPop 0.4s ease-out forwards",
-                  "&:hover": { transform: "scale(1)" },
-                  transition: "transform 0.3s ease-in-out",
+                  mt: 2,
+                  backgroundColor: "#201548",
+                  color: "#ffffff",
+                  fontWeight: "500",
+                  borderRadius: 2,
+                  fontSize: "0.85rem",
+                  "&:hover": {
+                    backgroundColor: "#1a1138",
+                    transform: "translateY(-2px)",
+                  },
                 }}
               >
-                <Typography
-                  variant="h5"
-                  sx={{
-                    mb: 1.5,
-                    color: "#0e0f0f",
-                    fontWeight: "600",
-                    fontSize: "1.2rem",
-                  }}
-                >
-                  {category}
-                </Typography>
-                {errors.relatedServices && (
-                  <Alert
-                    severity="error"
-                    sx={{
-                      mb: 1.5,
-                      borderRadius: 2,
-                      fontSize: "0.8rem",
-                      animation: "fadeIn 0.3s ease-in",
-                    }}
-                  >
-                    {errors.relatedServices}
-                  </Alert>
-                )}
-                <FormGroup>
-                  {services[category].map((service) => (
-                    <FormControlLabel
-                      key={service}
-                      control={
-                        <Checkbox
-                          value={service}
-                          checked={formData.relatedServices.includes(service)}
-                          onChange={handleRelatedServiceChange}
-                          sx={{
-                            color: "#d0d0d0",
-                            "&.Mui-checked": { color: "#201548" },
-                            transition: "color 0.2s ease",
-                            padding: "0.25rem",
-                          }}
-                        />
-                      }
-                      label={service}
-                      sx={{
-                        color: "#0e0f0f",
-                        mb: 0.25,
-                        "&:hover": { bgcolor: "#f7f7f7", borderRadius: 1 },
-                        fontSize: "0.85rem",
-                        animation: "fadeIn 0.5s ease-out",
-                      }}
-                    />
-                  ))}
-                </FormGroup>
-                <Button
-                  variant="contained"
-                  onClick={() => handleToggleModal(category)}
-                  sx={{
-                    mt: 1.5,
-                    backgroundColor: "#201548",
-                    color: "#ffffff",
-                    fontWeight: "500",
-                    borderRadius: 2,
-                    fontSize: "0.85rem",
-                    padding: "0.4rem 1rem",
-                    "&:hover": {
-                      backgroundColor: "#1a1138",
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                    },
-                    transition: "all 0.3s ease",
-                    animation: "fadeIn 0.6s ease-out",
-                  }}
-                >
-                  Close
-                </Button>
-              </Box>
-            </Modal>
-          </Box>
-        ))}
-      </Box>
-    );
-  };
+                Close
+              </Button>
+            </Box>
+          </Modal>
+        </Box>
+      ))}
+    </Box>
+  );
+};
+
 
   // Render selected services
   const renderSelectedServices = () => {
@@ -749,442 +747,434 @@ const BookSlot = () => {
     <div className="container my-5">
       <style>
         {`
-    .book-slot-container {
-      background: #ffffff;
-      border-radius: 14px;
-      padding: 1rem;
-      box-shadow: 0 6px 24px rgba(0,0,0,0.1);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      animation: containerFadeIn 0.8s ease-in-out;
-      max-width: 100%;
-    }
+        .book-slot-container {
+          background: #ffffff;
+          border-radius: 14px;
+          padding: 1rem;
+          box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+          min-height: 80vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          animation: containerFadeIn 0.8s ease-in-out;
+          max-width: 100%;
+          margin: 0 auto;
+        }
 
-    .shop-info-card {
-      background: #ffffff;
-      border-radius: 12px;
-      padding: 1rem;
-      transition: transform 0.4s ease, box-shadow 0.4s ease;
-      margin: 0 auto;
-      border: 1px solid #e8ecef;
-      animation: slideInLeft 0.6s ease-out;
-      width: 100%;
-    }
+        .shop-info-card {
+          background: linear-gradient(145deg, #ffffff, #f8fafc);
+          border-radius: 12px;
+          padding: 1.25rem;
+          transition: transform 0.4s ease, box-shadow 0.4s ease;
+          border: 1px solid #e8ecef;
+          animation: slideInLeft 0.6s ease-out;
+          width: 100%;
+          max-width: 400px;
+        }
 
-    .shop-info-card:hover {
-      transform: translateY(-8px) scale(1.02);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.12);
-    }
+        .shop-info-card:hover {
+          transform: translateY(-8px) scale(1.02);
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+        }
 
-    .booking-form-card {
-      background: #ffffff;
-      border-radius: 12px;
-      padding: 1rem;
-      transition: transform 0.4s ease, box-shadow 0.4s ease;
-      border: 1px solid rgb(50, 34, 107);
-      animation: slideInRight 0.6s ease-out;
-      width: 100%;
-      margin-left: 0;
-    }
+        .booking-form-card {
+          background: #ffffff;
+          border-radius: 12px;
+          padding: 1.5rem;
+          transition: transform 0.4s ease, box-shadow 0.4s ease;
+          border: 1px solid #32226b;
+          animation: slideInRight 0.6s ease-out;
+          width: 100%;
+          max-width: 600px;
+        }
 
-    .booking-form-card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.12);
-    }
+        .booking-form-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+        }
 
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
+        .form-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
 
-    .services-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-      align-items: stretch;
-    }
+        .services-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 0.5rem;
+          margin-bottom: 1rem;
+        }
 
-    .service-category {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: 40px;
-    }
+        .service-category {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          min-height: 40px;
+          padding: 0.5rem;
+        }
 
-    .form-field {
-      transition: all 0.3s ease;
-      animation: fadeInUp 0.5s ease-out;
-    }
+        .form-field {
+          transition: all 0.3s ease;
+          animation: fadeInUp 0.5s ease-out;
+        }
 
-    .form-field:hover {
-      transform: translateY(-2px);
-    }
+        .form-field:hover {
+          transform: translateY(-2px);
+        }
 
-    .full-width-field {
-      grid-column: span 1;
-    }
+        .full-width-field {
+          grid-column: span 1;
+        }
 
-    .direction-button {
-      border-radius: 8px;
-      text-transform: none;
-      font-weight: 500;
-      padding: 0.5rem 1rem;
-      transition: all 0.3s ease;
-      font-size: 0.8rem;
-      animation: fadeIn 0.7s ease-out;
-    }
+        .direction-button {
+          border-radius: 8px;
+          text-transform: none;
+          font-weight: 500;
+          padding: 0.5rem 1rem;
+          transition: all 0.3s ease;
+          font-size: 0.875rem;
+          background-color: #201548;
+          color: #ffffff;
+          animation: fadeIn 0.7s ease-out;
+        }
 
-    .direction-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-      background-color: rgba(32, 21, 72, 0.1);
-    }
+        .direction-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+          background-color: #1a1138;
+        }
 
-    .book-slot-button {
-      border-radius: 8px;
-      text-transform: none;
-      font-size: 0.9rem;
-      padding: 0.6rem;
-      font-weight: 500;
-      transition: all 0.3s ease;
-      animation: fadeIn 0.8s ease-out;
-    }
+        .book-slot-button {
+          border-radius: 8px;
+          text-transform: none;
+          font-size: 1rem;
+          padding: 0.6rem;
+          font-weight: 500;
+          transition: all 0.3s ease;
+          background-color: #201548;
+          color: #ffffff;
+          animation: fadeIn 0.8s ease-out;
+        }
 
-    .book-slot-button:hover {
-      transform: translateY(-3px) scale(1.02);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-    }
+        .book-slot-button:hover {
+          transform: translateY(-3px) scale(1.02);
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+          background-color: #1a1138;
+        }
 
-    .parlor-image {
-      border-radius: 10px;
-      object-fit: cover;
-      width: 100%;
-      height: 120px;
-      transition: transform 0.4s ease, filter 0.4s ease;
-    }
+        .parlor-image {
+          border-radius: 10px;
+          object-fit: cover;
+          width: 100%;
+          height: 140px;
+          transition: transform 0.4s ease, filter 0.4s ease;
+        }
 
-    .parlor-image:hover {
-      transform: scale(1.05);
-      filter: brightness(1.1);
-    }
+        .parlor-image:hover {
+          transform: scale(1.05);
+          filter: brightness(1.1);
+        }
 
-    @keyframes containerFadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+        .terms-link {
+          cursor: pointer;
+          color: #201548;
+          text-decoration: underline;
+          font-size: 0.875rem;
+          transition: color 0.3s ease;
+        }
 
-    @keyframes slideInLeft {
-      from { opacity: 0; transform: translateX(-20px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
+        .terms-link:hover {
+          color: #1a1138;
+        }
 
-    @keyframes slideInRight {
-      from { opacity: 0; transform: translateX(20px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
+        .css-11hgk1s-MuiButtonBase-root-MuiChip-root .MuiChip-deleteIcon {
+          -webkit-tap-highlight-color: transparent;
+          color: rgba(255, 255, 255, 0.26);
+          cursor: pointer;
+          margin: 0 5px 0 -6px;
+        }
 
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+        @keyframes containerFadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
 
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+        @keyframes slideInLeft {
+          from { opacity: 0; transform: translateX(-20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
 
-    @keyframes modalPop {
-      from { opacity: 0; transform: scale(0.8); }
-      to { opacity: 1; transform: scale(0.9); }
-    }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
 
-    /* Extra Small Devices (320px - 480px) */
-    @media (min-width: 320px) and (max-width: 480px) {
-      .book-slot-container {
-        padding: 0.5rem;
-        min-height: auto;
-        align-items: flex-start;
-      }
-      .shop-info-card {
-        padding: 0.75rem;
-        margin-bottom: 1rem;
-        width: 100%;
-      }
-      .booking-form-card {
-        padding: 0.75rem;
-        width: 100%;
-        margin-left: 0;
-      }
-      .form-grid {
-        grid-template-columns: 1fr;
-        gap: 0.75rem;
-      }
-      .services-grid {
-        grid-template-columns: 1fr;
-        gap: 0.5rem;
-      }
-      .service-category {
-        padding: 0.4rem;
-        min-height: 36px;
-      }
-      .service-category h6 {
-        font-size: 0.85rem;
-      }
-      .parlor-image {
-        height: 100px;
-      }
-      .direction-button {
-        font-size: 0.75rem;
-        padding: 0.4rem 0.8rem;
-      }
-      .book-slot-button {
-        font-size: 0.8rem;
-        padding: 0.5rem;
-      }
-      .booking-form-card h3 {
-        font-size: 1.4rem;
-      }
-      .shop-info-card h5 {
-        font-size: 1.2rem;
-      }
-    }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
 
-    /* Small Devices (481px - 768px) */
-    @media (min-width: 481px) and (max-width: 768px) {
-      .book-slot-container {
-        padding: 1rem;
-        min-height: auto;
-        align-items: flex-start;
-      }
-      .shop-info-card {
-        padding: 1rem;
-        margin-bottom: 1.5rem;
-        width: 100%;
-      }
-      .booking-form-card {
-        padding: 1rem;
-        width: 100%;
-        margin-left: 0;
-      }
-      .form-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-      .services-grid {
-        grid-template-columns: 1fr;
-        gap: 0.75rem;
-      }
-      .service-category {
-        padding: 0.5rem;
-        min-height: 38px;
-      }
-      .service-category h6 {
-        font-size: 0.9rem;
-      }
-      .parlor-image {
-        height: 120px;
-      }
-      .direction-button {
-        font-size: 0.8rem;
-      }
-      .book-slot-button {
-        font-size: 0.85rem;
-      }
-      .booking-form-card h3 {
-        font-size: 1.6rem;
-      }
-      .shop-info-card h5 {
-        font-size: 1.3rem;
-      }
-    }
+        @keyframes modalPop {
+          from { opacity: 0; transform: scale(0.8); }
+          to { opacity: 1; transform: scale(0.9); }
+        }
 
-    /* Medium Devices (769px - 1024px) */
-    @media (min-width: 769px) and (max-width: 1024px) {
-      .book-slot-container {
-        padding: 1.5rem;
-        max-width: 960px;
-        margin: 0 auto;
-      }
-      .shop-info-card {
-        padding: 1.25rem;
-        width: 100%;
-        max-width: 300px;
-      }
-      .booking-form-card {
-        padding: 1.5rem;
-        width: 100%;
-        margin-left: 0;
-      }
-      .form-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 1.25rem;
-      }
-      .services-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-      }
-      .service-category {
-        padding: 0.5rem;
-        min-height: 40px;
-      }
-      .service-category h6 {
-        font-size: 0.9rem;
-      }
-      .full-width-field {
-        grid-column: span 2;
-      }
-      .parlor-image {
-        height: 130px;
-      }
-      .direction-button {
-        font-size: 0.85rem;
-      }
-      .book-slot-button {
-        font-size: 0.9rem;
-      }
-      .booking-form-card h3 {
-        font-size: 1.7rem;
-      }
-      .shop-info-card h5 {
-        font-size: 1.35rem;
-      }
-    }
+        @media (min-width: 320px) and (max-width: 480px) {
+          .book-slot-container {
+            padding: 0.5rem;
+            min-height: auto;
+            align-items: flex-start;
+          }
+          .shop-info-card {
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            max-width: 100%;
+          }
+          .booking-form-card {
+            padding: 0.75rem;
+            max-width: 100%;
+          }
+          .form-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+          }
+          .services-grid {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+          }
+          .service-category {
+            padding: 0.4rem;
+            min-height: 36px;
+          }
+          .service-category h6 {
+            font-size: 0.85rem;
+          }
+          .parlor-image {
+            height: 100px;
+          }
+          .direction-button {
+            font-size: 0.75rem;
+            padding: 0.4rem 0.8rem;
+          }
+          .book-slot-button {
+            font-size: 0.8rem;
+            padding: 0.5rem;
+          }
+          .booking-form-card h3 {
+            font-size: 1.4rem;
+          }
+          .shop-info-card h5 {
+            font-size: 1.2rem;
+          }
+        }
 
-    /* Large Devices (1025px - 1440px) */
-    @media (min-width: 1025px) and (max-width: 1440px) {
-      .book-slot-container {
-        padding: 2rem;
-        max-width: 1200px;
-        margin: 0 auto;
-      }
-      .shop-info-card {
-        padding: 1.5rem;
-        width: 148%;
-        max-width: 350px;
-      }
-      .booking-form-card {
-        padding: 2rem;
-        width: 124%;
-        margin-left: 120px;
-      }
-      .form-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-      }
-      .services-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-      }
-      .service-category {
-        padding: 0.5rem;
-        min-height: 40px;
-      }
-      .service-category h6 {
-        font-size: 0.9rem;
-      }
-      .full-width-field {
-        grid-column: span 2;
-      }
-      .parlor-image {
-        height: 140px;
-      }
-      .direction-button {
-        font-size: 0.85rem;
-        padding: 0.5rem 1.2rem;
-      }
-      .book-slot-button {
-        font-size: 0.95rem;
-        padding: 0.7rem;
-      }
-      .booking-form-card h3 {
-        font-size: 1.8rem;
-      }
-      .shop-info-card h5 {
-        font-size: 1.4rem;
-      }
-    }
-
-    /* Extra Large Devices (1441px - 2560px) */
-    @media (min-width: 1441px) {
-      .book-slot-container {
-        padding: 2.5rem;
-        max-width: 1400px;
-        margin: 0 auto;
-      }
-      .shop-info-card {
-        padding: 1.75rem;
-        width: 148%;
-        max-width: 400px;
-      }
-      .booking-form-card {
-        padding: 2.5rem;
-        width: 124%;
-        margin-left: 140px;
-      }
-      .form-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 1.75rem;
-      }
-      .services-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-      }
-      .service-category {
-        padding: 0.6rem;
-        min-height: 44px;
-      }
-      .service-category h6 {
-        font-size: 1rem;
-      }
-      .full-width-field {
-        grid-column: span 2;
-      }
-      .parlor-image {
-        height: 160px;
-      }
-      .direction-button {
-        font-size: 0.9rem;
-        padding: 0.6rem 1.4rem;
-      }
-      .book-slot-button {
-        font-size: 1rem;
-        padding: 0.8rem;
-      }
-      .booking-form-card h3 {
-        font-size: 2rem;
-      }
-      .shop-info-card h5 {
-        font-size: 1.5rem;
-      }
-    }
-
-    .css-11hgk1s-MuiButtonBase-root-MuiChip-root .MuiChip-deleteIcon {
-      -webkit-tap-highlight-color: transparent;
-      color: rgba(255, 255, 255, 0.26);
-      cursor: pointer;
-      margin: 0 5px 0 -6px;
-    }
-
-    .terms-link {
-            cursor: pointer;
-            color: #201548;
-            text-decoration: underline;
+        @media (min-width: 481px) and (max-width: 768px) {
+          .book-slot-container {
+            padding: 1rem;
+            min-height: auto;
+            align-items: flex-start;
+          }
+          .shop-info-card {
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            max-width: 100%;
+          }
+          .booking-form-card {
+            padding: 1rem;
+            max-width: 100%;
+          }
+          .form-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+          .services-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+          }
+          .service-category {
+            padding: 0.5rem;
+            min-height: 38px;
+          }
+          .service-category h6 {
             font-size: 0.9rem;
-            transition: color 0.3s ease;
           }
-          .terms-link:hover {
-            color: #1a1138;
+          .parlor-image {
+            height: 120px;
           }
-  `}
+          .direction-button {
+            font-size: 0.8rem;
+          }
+          .book-slot-button {
+            font-size: 0.85rem;
+          }
+          .booking-form-card h3 {
+            font-size: 1.6rem;
+          }
+          .shop-info-card h5 {
+            font-size: 1.3rem;
+          }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .book-slot-container {
+            padding: 1.5rem;
+            max-width: 960px;
+            margin: 0 auto;
+          }
+          .shop-info-card {
+            padding: 1.25rem;
+            max-width: 360 Dumas, Claude (French, 1946- )px;
+          }
+          .booking-form-card {
+            padding: 1.5rem;
+            max-width: 560px;
+          }
+          .form-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+          }
+          .services-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+          }
+          .service-category {
+            padding: 0.5rem;
+            min-height: 40px;
+          }
+          .service-category h6 {
+            font-size: 0.9rem;
+          }
+          .full-width-field {
+            grid-column: span 2;
+          }
+          .parlor-image {
+            height: 130px;
+          }
+          .direction-button {
+            font-size: 0.85rem;
+          }
+          .book-slot-button {
+            font-size: 0.9rem;
+          }
+          .booking-form-card h3 {
+            font-size: 1.7rem;
+          }
+          .shop-info-card h5 {
+            font-size: 1.35rem;
+          }
+        }
+
+        @media (min-width: 1025px) and (max-width: 1440px) {
+          .book-slot-container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+          }
+          .shop-info-card {
+            padding: 1.5rem;
+            max-width: 400px;
+          }
+          .booking-form-card {
+            padding: 2rem;
+            max-width: 600px;
+            margin-left: 1rem;
+          }
+          .form-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+          }
+          .services-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+          }
+          .service-category {
+            padding: 0.5rem;
+            min-height: 40px;
+          }
+          .service-category h6 {
+            font-size: 0.9rem;
+          }
+          .full-width-field {
+            grid-column: span 2;
+          }
+          .parlor-image {
+            height: 140px;
+          }
+          .direction-button {
+            font-size: 0.85rem;
+            padding: 0.5rem 1.2rem;
+          }
+          .book-slot-button {
+            font-size: 0.95rem;
+            padding: 0.7rem;
+          }
+          .booking-form-card h3 {
+            font-size: 1.8rem;
+          }
+          .shop-info-card h5 {
+            font-size: 1.4rem;
+          }
+        }
+
+        @media (min-width: 1441px) {
+          .book-slot-container {
+            padding: 2.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+          }
+          .shop-info-card {
+            padding: 1.75rem;
+            max-width: 450px;
+          }
+          .booking-form-card {
+            padding: 2.5rem;
+            max-width: 650px;
+            margin-left: 1.5rem;
+          }
+          .form-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 1.75rem;
+          }
+          .services-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+          }
+          .service-category {
+            padding: 0.6rem;
+            min-height: 44px;
+          }
+          .service-category h6 {
+            font-size: 1rem;
+          }
+          .full-width-field {
+            grid-column: span 2;
+          }
+          .parlor-image {
+            height: 160px;
+          }
+          .direction-button {
+            font-size: 0.9rem;
+            padding: 0.6rem 1.4rem;
+          }
+          .book-slot-button {
+            font-size: 1rem;
+            padding: 0.8rem;
+          }
+          .booking-form-card h3 {
+            font-size: 2rem;
+          }
+          .shop-info-card h5 {
+            font-size: 1.5rem;
+          }
+        }
+        `}
       </style>
 
       <div className="container my-5">
@@ -1518,7 +1508,8 @@ const BookSlot = () => {
                       disabled={
                         !formData.date ||
                         !formData.favoriteEmployee ||
-                        availableTimeSlots.length === 0
+                        availableTimeSlots.length === 0 ||
+                        formData.duration === 0
                       }
                       inputRef={timeRef}
                     >
@@ -1529,6 +1520,8 @@ const BookSlot = () => {
                       >
                         {availableTimeSlots.length === 0
                           ? "No available time slots"
+                          : formData.duration === 0
+                          ? "Service duration not available"
                           : "Select a time slot"}
                       </MenuItem>
                       {availableTimeSlots.map((slot) => (
@@ -1625,6 +1618,8 @@ const BookSlot = () => {
                       },
                     }}
                     InputProps={{ readOnly: true }}
+                    error={!!errors.duration}
+                    helperText={errors.duration}
                   />
                 </Box>
 
@@ -1643,6 +1638,10 @@ const BookSlot = () => {
                 {renderServiceCheckboxes()}
                 {formData.relatedServices.length > 0 &&
                   renderSelectedServices()}
+
+                  
+
+               
 
                 <Box
                   sx={{
@@ -1692,7 +1691,6 @@ const BookSlot = () => {
                   </Typography>
                 )}
 
-                {/* Terms and Conditions Modal */}
                 <Modal
                   open={termsModalOpen}
                   onClose={handleTermsModalToggle}
@@ -1794,7 +1792,9 @@ const BookSlot = () => {
                     fontSize: "0.9rem",
                     animation: "fadeIn 0.8s ease-out",
                   }}
-                  disabled={Object.keys(parlor).length === 0}
+                  disabled={
+                    Object.keys(parlor).length === 0 || formData.duration === 0
+                  }
                 >
                   Book Slot
                 </Button>
