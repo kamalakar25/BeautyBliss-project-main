@@ -1,0 +1,67 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@date-io/date-fns": "^3.2.1",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@googlemaps/js-api-loader": "^1.16.8",
+    "@mui/icons-material": "^7.0.1",
+    "@mui/lab": "^7.0.0-beta.10",
+    "@mui/material": "^7.0.1",
+    "@mui/x-date-pickers": "^7.28.3",
+    "@mui/x-date-pickers-pro": "^7.28.3",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "axios": "^1.9.0",
+    "bootstrap": "^5.3.5",
+    "bootstrap-icons": "^1.11.3",
+    "chart.js": "^4.4.9",
+    "date-fns": "^2.30.0",
+    "framer-motion": "^12.6.3",
+    "jspdf": "^3.0.1",
+    "leaflet": "^1.9.4",
+    "react": "^19.1.0",
+    "react-bootstrap": "^2.10.9",
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "^19.1.0",
+    "react-responsive-carousel": "^3.2.23",
+    "react-router-dom": "^6.30.0",
+    "react-scripts": "5.0.1",
+    "react-slick": "^0.30.3",
+    "slick-carousel": "^1.8.1",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "description": "��#\u0000 \u0000b\u0000l\u0000i\u0000s\u0000s\u0000-\u0000a\u0000p\u0000k\u0000-\u0000f\u0000r\u0000o\u0000n\u0000t\u0000e\u0000n\u0000d\u0000\r\u0000 \u0000#\u0000 \u0000B\u0000e\u0000a\u0000u\u0000t\u0000y\u0000B\u0000l\u0000i\u0000s\u0000s\u0000-\u0000F\u0000i\u0000n\u0000a\u0000l\u0000\r\u0000 \u0000",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
