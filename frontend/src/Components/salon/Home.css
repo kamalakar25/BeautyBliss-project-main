@@ -1,0 +1,746 @@
+/* Home.css */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+/* General Styles */
+.trend-container {
+  background: #ffffff;
+  color: #0e0f0f;
+  font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 1400px;
+  padding: 0 12px;
+  margin: 0 auto;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(-50px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(50px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px rgba(32, 21, 72, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(32, 21, 72, 0.4); }
+  100% { box-shadow: 0 0 5px rgba(32, 21, 72, 0.2); }
+}
+
+/* Hero Section */
+.trend-hero {
+  background: linear-gradient(135deg, #ffffff, #f0f4f8);
+  padding: 80px 0;
+  min-height: 85vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.trend-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(32, 21, 72, 0.1), transparent);
+  z-index: 0;
+}
+
+.trend-hero-text {
+  position: relative;
+  z-index: 1;
+  text-align: left;
+}
+
+.trend-hero-title {
+  font-size: 3.8rem;
+  font-weight: 700;
+  color: #0e0f0f;
+  line-height: 1.2;
+  margin-bottom: 20px;
+}
+
+.trend-hero-title .trend-highlight {
+  background: linear-gradient(90deg, #201548, #4a3b8c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.trend-hero-subtitle {
+  font-size: 1.3rem;
+  color: #0e0f0f;
+  opacity: 0.85;
+  max-width: 500px;
+  margin-bottom: 30px;
+}
+
+.trend-hero-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.trend-hero-button {
+  background: rgba(32, 21, 72, 0.1);
+  backdrop-filter: blur(10px);
+  color: #201548;
+  padding: 12px 30px;
+  border-radius: 50px;
+  border: 2px solid rgba(32, 21, 72, 0.3);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.trend-hero-button:hover {
+  background: linear-gradient(90deg, #201548, #4a3b8c);
+  color: #ffffff;
+  border-color: transparent;
+  transform: translateY(-3px);
+}
+
+.trend-hero-image {
+  max-width: 100%;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  transition: all 0.4s ease;
+  position: relative;
+  z-index: 1;
+}
+
+/* Salon Section */
+.trend-salon {
+  padding: 80px 0;
+  background: linear-gradient(180deg, #f8f9fa, #ffffff);
+}
+
+.trend-section-title {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #201548;
+  text-align: center;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.trend-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, #201548, #4a3b8c);
+  border-radius: 2px;
+}
+
+.trend-section-subtitle {
+  font-size: 1.25rem;
+  color: #0e0f0f;
+  opacity: 0.7;
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 50px;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(32, 21, 72, 0.1);
+  transition: all 0.4s ease;
+}
+
+.glass-card-image-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  transition: all 0.4s ease;
+}
+
+.glass-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(32, 21, 72, 0.7);
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s ease;
+}
+
+.glass-card:hover .glass-card-overlay {
+  opacity: 1;
+}
+
+.glass-card-overlay-text {
+  color: #ffffff;
+  font-size: 1rem;
+  text-align: center;
+  padding: 20px;
+  transform: translateY(20px);
+  transition: all 0.4s ease;
+}
+
+.glass-card:hover .glass-card-overlay-text {
+  transform: translateY(0);
+}
+
+.glass-card-body {
+  padding: 20px;
+  text-align: center;
+}
+
+.glass-card-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #201548;
+  margin-bottom: 10px;
+}
+
+/* Beauty Section */
+.trend-beauty {
+  padding: 80px 0;
+  background: #ffffff;
+}
+
+.beauty-card .glass-card-image {
+  height: 150px;
+  width: 100%;
+  padding: 20px;
+  object-fit: contain; /* Default to contain for logo-like images */
+}
+
+.beauty-card[data-fit="cover"] .glass-card-image {
+  object-fit: cover;
+  padding: 0;
+}
+
+/* Skincare Section */
+.trend-skincare {
+  padding: 80px 0;
+  background: linear-gradient(180deg, #f8f9fa, #ffffff);
+}
+
+.trend-skincare-images {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  min-height: 300px;
+}
+
+.center-image {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.center-image-item {
+  width: 250px;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(32, 21, 72, 0.2);
+  transition: all 0.4s ease;
+}
+
+.trend-skincare-text {
+  text-align: left;
+}
+
+.trend-section-text {
+  font-size: 1.2rem;
+  color: #0e0f0f;
+  opacity: 0.85;
+  margin-bottom: 30px;
+}
+
+.trend-skincare-list {
+  list-style: none;
+  padding: 0;
+}
+
+.trend-skincare-list-item {
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+  color: #0e0f0f;
+  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(32, 21, 72, 0.05);
+  transition: all 0.3s ease;
+}
+
+.trend-skincare-list-item:hover {
+  background: rgba(32, 21, 72, 0.1);
+  transform: translateX(5px);
+}
+
+.trend-skincare-icon {
+  color: #201548;
+  margin-right: 12px;
+  font-size: 1.3rem;
+}
+
+/* Footer Section */
+.trend-footer {
+  background: linear-gradient(180deg, #201548, #1a113b);
+  color: #ffffff;
+  padding: 60px 0;
+  position: relative;
+}
+
+.trend-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, #4a3b8c, #201548);
+}
+
+.trend-footer-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.trend-footer-title::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background: #ffffff;
+  border-radius: 2px;
+}
+
+.trend-footer-contact p,
+.trend-footer-links a,
+.trend-footer-copyright {
+  font-size: 1rem;
+  color: #ffffff;
+  opacity: 0.9;
+}
+
+.trend-footer-links a {
+  display: block;
+  margin-bottom: 12px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.trend-footer-links a:hover {
+  color: #f0f4f8;
+}
+
+.trend-footer-social-icons {
+  display: flex;
+  gap: 20px;
+  justify-content: flex-end;
+}
+
+.trend-footer-social-icon {
+  font-size: 1.8rem;
+  color: #ffffff;
+  transition: all 0.4s ease;
+}
+
+.trend-footer-social-icon:hover {
+  color: #f0f4f8;
+}
+
+.trend-footer-copyright {
+  text-align: center;
+  margin-top: 40px;
+  font-size: 0.9rem;
+}
+
+/* Responsive Design */
+@media (max-width: 320px) {
+  .trend-hero {
+    padding: 40px 0;
+    min-height: auto;
+  }
+
+  .trend-hero-title {
+    font-size: 1.8rem;
+  }
+
+  .trend-hero-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .trend-hero-button {
+    padding: 8px 20px;
+    font-size: 0.85rem;
+  }
+
+  .trend-hero-image {
+    max-width: 100%;
+    margin: 20px auto;
+  }
+
+  .trend-section-title {
+    font-size: 1.6rem;
+  }
+
+  .trend-section-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .glass-card {
+    margin-bottom: 20px;
+  }
+
+  .glass-card-image {
+    height: 120px;
+  }
+
+  .glass-card-title {
+    font-size: 1.2rem;
+  }
+
+  .glass-card-overlay-text {
+    font-size: 0.85rem;
+    padding: 10px;
+  }
+
+  .trend-skincare-images {
+    flex-direction: column;
+    gap: 15px;
+    min-height: auto;
+  }
+
+  .center-image-item {
+    width: 180px;
+    height: 220px;
+  }
+
+  .trend-skincare-text {
+    text-align: center;
+  }
+
+  .trend-section-text {
+    font-size: 1rem;
+  }
+
+  .trend-skincare-list-item {
+    font-size: 0.9rem;
+  }
+
+  .trend-footer-contact,
+  .trend-footer-links,
+  .trend-footer-social {
+    text-align: center;
+  }
+
+  .trend-footer-social-icons {
+    justify-content: center;
+  }
+}
+
+@media (min-width: 321px) and (max-width: 575px) {
+  .trend-hero-title {
+    font-size: 2.2rem;
+  }
+
+  .trend-hero-subtitle {
+    font-size: 1rem;
+  }
+
+  .trend-hero-button {
+    padding: 10px 25px;
+    font-size: 0.9rem;
+  }
+
+  .trend-section-title {
+    font-size: 1.8rem;
+  }
+
+  .center-image-item {
+    width: 200px;
+    height: 240px;
+  }
+}
+
+@media (min-width: 576px) and (max-width: 767px) {
+  .trend-hero-title {
+    font-size: 2.5rem;
+  }
+
+  .trend-section-title {
+    font-size: 2rem;
+  }
+
+  .center-image-item {
+    width: 220px;
+    height: 260px;
+  }
+
+  .trend-skincare-images {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  .trend-hero-title {
+    font-size: 3rem;
+  }
+
+  .trend-section-title {
+    font-size: 2.3rem;
+  }
+
+  .center-image-item {
+    width: 230px;
+    height: 280px;
+  }
+}
+
+@media (min-width: 992px) and (max-width: 1199px) {
+  .trend-hero-title {
+    font-size: 3.5rem;
+  }
+
+  .trend-section-title {
+    font-size: 2.5rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .trend-hero-title {
+    font-size: 3.8rem;
+  }
+
+  .trend-section-title {
+    font-size: 2.8rem;
+  }
+
+  .trend-skincare-images {
+    flex-wrap: nowrap;
+    gap: 30px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .container {
+    max-width: 1500px;
+  }
+
+  .trend-hero-title {
+    font-size: 4.2rem;
+  }
+
+  .trend-section-title {
+    font-size: 3rem;
+  }
+}
+
+/* Reduced Motion for Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .trend-hero-button,
+  .glass-card,
+  .center-image,
+  .trend-footer-social-icon {
+    transition: none;
+  }
+
+  .trend-hero-image,
+  .glass-card-overlay,
+  .glass-card-overlay-text {
+    transition: none;
+  }
+}
+
+
+/* Skincare Section */
+.trend-skincare {
+  padding: 80px 0;
+  background: linear-gradient(180deg, #f8f9fa, #ffffff);
+  overflow: hidden;
+}
+
+.trend-skincare .row {
+  align-items: center;
+}
+
+.trend-skincare-images {
+  position: relative;
+  min-height: 400px;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.parallax-image {
+  position: absolute;
+  transition: all 0.4s ease;
+  width: 100%;
+  max-width: 250px;
+}
+
+.parallax-image-item {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(32, 21, 72, 0.2);
+}
+
+.trend-skincare-text {
+  padding: 0 20px;
+}
+
+.trend-section-text {
+  font-size: 1.1rem;
+  color: #0e0f0f;
+  opacity: 0.85;
+  margin-bottom: 30px;
+}
+
+.trend-skincare-list {
+  list-style: none;
+  padding: 0;
+}
+
+.trend-skincare-list-item {
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  color: #0e0f0f;
+  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(32, 21, 72, 0.05);
+  transition: all 0.3s ease;
+}
+
+.trend-skincare-list-item:hover {
+  background: rgba(32, 21, 72, 0.1);
+  transform: translateX(5px);
+}
+
+.trend-skincare-icon {
+  color: #201548;
+  margin-right: 12px;
+  font-size: 1.2rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 767px) {
+  .trend-skincare {
+    padding: 60px 0;
+  }
+  
+  .trend-skincare-images {
+    min-height: 300px;
+    height: auto;
+    margin-bottom: 40px;
+  }
+  
+  .parallax-image {
+    position: relative;
+    top: 0 !important;
+    left: 0 !important;
+    margin-bottom: 15px;
+    max-width: 220px;
+  }
+  
+  .parallax-image-item {
+    height: 250px;
+  }
+  
+  .trend-skincare-text {
+    text-align: center;
+    padding: 0 15px;
+  }
+  
+  .trend-section-text {
+    font-size: 1rem;
+  }
+  
+  .trend-skincare-list {
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  
+  .trend-skincare-list-item {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 575px) {
+  .trend-skincare-images {
+    min-height: 250px;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .parallax-image {
+    max-width: 200px;
+  }
+  
+  .parallax-image-item {
+    height: 220px;
+  }
+  
+  .trend-skincare-list-item {
+    font-size: 0.9rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  .trend-skincare-images {
+    min-height: 350px;
+  }
+  
+  .parallax-image-item {
+    height: 280px;
+  }
+}

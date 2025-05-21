@@ -1,0 +1,25 @@
+/* Keep pagination items in a row, no wrapping */
+.pagination.flex-nowrap {
+  flex-wrap: nowrap;
+}
+
+/* Make pagination container scroll horizontally on overflow */
+.pagination-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Optional: Hide scrollbar for WebKit browsers */
+.pagination-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+/* Optional: Hide scrollbar for Firefox */
+.pagination-wrapper {
+  scrollbar-width: none;
+}
+
+/* Ensure pagination list doesn't have default margin */
+.pagination {
+  margin-bottom: 0;
+}
