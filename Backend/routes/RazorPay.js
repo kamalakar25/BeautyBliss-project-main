@@ -1,8 +1,9 @@
-const express = require('express');
-const Razorpay = require('razorpay');
-const crypto = require('crypto');
-const User = require('../models/user'); // Adjust path to your User model
-require('dotenv').config();
+
+const express = require("express");
+const Razorpay = require("razorpay");
+const crypto = require("crypto");
+const User = require("../models/user");
+require("dotenv").config();
 
 const router = express.Router();
 
@@ -12,8 +13,8 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_SECRET,
 });
 
-// Create a new booking and Razorpay order
-router.post('/order', async (req, res) => {
+// Route: Create order for initial booking (mandatory, unchanged)
+router.post("/order", async (req, res) => {
   try {
     const {
       parlorEmail,
@@ -44,7 +45,7 @@ router.post('/order', async (req, res) => {
       // console.error('Missing required fields:', req.body);
       return res
         .status(400)
-        .json({ error: 'Missing required fields', missing: req.body });
+        .json({ error: "Missing required fields", missing: req.body });
     }
 
     // Validate numeric fields
@@ -58,7 +59,7 @@ router.post('/order', async (req, res) => {
       //   amount,
       //   total_amount,
       // });
-      return res.status(400).json({ error: 'Invalid amount or total_amount' });
+      return res.status(400).json({ error: "Invalid amount or total_amount" });
     }
 
     // Calculate duration: 60 minutes base + 30 minutes per additional service
@@ -67,16 +68,16 @@ router.post('/order', async (req, res) => {
     const totalDuration = baseDuration + additionalDuration;
 
     // Validate date
-  if (!date || isNaN(new Date(date).getTime())) {
-    // console.error('Invalid date:', date);
-    return res.status(400).json({ error: 'Invalid date format' });
-  }
+    if (!date || isNaN(new Date(date).getTime())) {
+      // console.error('Invalid date:', date);
+      return res.status(400).json({ error: "Invalid date format" });
+    }
 
     // Validate time slot availability
     const user = await User.findOne({ email: userEmail });
     if (!user) {
       // console.error('User not found:', userEmail);
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     const existingBookings = user.bookings.filter((booking) => {
@@ -89,18 +90,18 @@ router.post('/order', async (req, res) => {
         // console.warn('Invalid booking date found:', booking);
         return false; // Skip bookings with invalid dates
       }
-    
+
       return (
         booking.favoriteEmployee === favoriteEmployee &&
-        booking.date.toISOString().split('T')[0] ===
-          new Date(date).toISOString().split('T')[0]
+        booking.date.toISOString().split("T")[0] ===
+          new Date(date).toISOString().split("T")[0]
       );
     });
 
     // Convert time to minutes for overlap checking
     const timeToMinutes = (timeStr) => {
-      const [start] = timeStr.split('-');
-      const [hours, minutes] = start.split(':').map(Number);
+      const [start] = timeStr.split("-");
+      const [hours, minutes] = start.split(":").map(Number);
       return hours * 60 + minutes;
     };
 
@@ -118,12 +119,10 @@ router.post('/order', async (req, res) => {
         //   duration: totalDuration,
         //   existingBooking: booking,
         // });
-        return res
-          .status(400)
-          .json({
-            error:
-              'Selected time slot is not available for the required duration',
-          });
+        return res.status(400).json({
+          error:
+            "Selected time slot is not available for the required duration",
+        });
       }
     }
 
@@ -137,10 +136,10 @@ router.post('/order', async (req, res) => {
       service,
       amount: Number(amount),
       total_amount: Number(total_amount),
-      Payment_Mode: 'PENDING',
+      Payment_Mode: "PENDING",
       favoriteEmployee,
       relatedServices: relatedServices || [],
-      paymentStatus: 'PENDING',
+      paymentStatus: "PENDING",
       duration: totalDuration, // Add duration to booking
     };
 
@@ -162,15 +161,15 @@ router.post('/order', async (req, res) => {
     // Create Razorpay order
     const options = {
       amount: Math.round(amount * 100), // Use amount instead of total_amount
-      currency: 'INR',
+      currency: "INR",
       receipt: `booking_${bookingId}`,
-      notes: { bookingId, userEmail },
+      notes: { bookingId, userEmail, paymentType: "initial" },
     };
 
     const order = await razorpay.orders.create(options);
     if (!order) {
       // console.error('Failed to create Razorpay order');
-      return res.status(500).json({ error: 'Failed to create order' });
+      return res.status(500).json({ error: "Failed to create order" });
     }
 
     // Update booking with orderId
@@ -191,7 +190,8 @@ router.post('/order', async (req, res) => {
   }
 });
 
-router.post('/order/validate', async (req, res) => {
+// Route: Validate payment (mandatory, updated to handle partial payments)
+router.post("/order/validate", async (req, res) => {
   try {
     const {
       pin,
@@ -200,6 +200,7 @@ router.post('/order/validate', async (req, res) => {
       razorpay_signature,
       userEmail,
       bookingId,
+      paymentType, // 'initial' or 'remaining'
     } = req.body;
 
     // Validate required fields
@@ -210,16 +211,8 @@ router.post('/order/validate', async (req, res) => {
       !userEmail ||
       !bookingId
     ) {
-      // console.error('Missing required fields:', {
-      //   pin,
-      //   razorpay_order_id,
-      //   razorpay_payment_id,
-      //   razorpay_signature,
-      //   userEmail,
-      //   bookingId,
-      // });
       return res.status(400).json({
-        error: 'Missing required fields',
+        error: "Missing required fields",
         missing: {
           pin,
           razorpay_order_id,
@@ -227,111 +220,131 @@ router.post('/order/validate', async (req, res) => {
           razorpay_signature,
           userEmail,
           bookingId,
+          paymentType,
         },
       });
     }
 
     // For failed payments, signature may be empty
-    let paymentStatus = 'PAID';
+    let paymentStatus = "PAID";
     let failureReason = null;
     let paymentMethod = null;
 
     // Verify signature for successful payments
     if (razorpay_signature) {
-      const sha = crypto.createHmac('sha256', process.env.RAZORPAY_SECRET);
+      const sha = crypto.createHmac("sha256", process.env.RAZORPAY_SECRET);
       sha.update(`${razorpay_order_id}|${razorpay_payment_id}`);
-      const digest = sha.digest('hex');
-
-      // console.log('Generated digest:', digest);
-      // console.log('Provided signature:', razorpay_signature);
+      const digest = sha.digest("hex");
 
       if (digest !== razorpay_signature) {
-        // console.error('Signature verification failed');
-        paymentStatus = 'FAILED';
-        failureReason = 'Invalid signature';
+        paymentStatus = "FAILED";
+        failureReason = "Invalid signature";
       }
     } else {
-      paymentStatus = 'FAILED';
+      paymentStatus = "FAILED";
       failureReason =
-        req.body.failureReason || 'Payment failed (no signature provided)';
+        req.body.failureReason || "Payment failed (no signature provided)";
     }
 
     // Fetch payment details from Razorpay
     let payment;
     try {
       payment = await razorpay.payments.fetch(razorpay_payment_id);
-      paymentMethod = payment.method; // e.g., 'upi', 'card', 'netbanking', 'wallet'
+      paymentMethod = payment.method;
+      console.log("Razorpay payment amount (in paise):", payment.amount);
     } catch (err) {
-      // console.error('Error fetching payment details:', err);
-      paymentStatus = 'FAILED';
+      paymentStatus = "FAILED";
       failureReason =
-        err.error?.description || 'Failed to fetch payment details';
+        err.error?.description || "Failed to fetch payment details";
     }
 
-    // Update booking with payment details
+    // Prepare update data
+    const updateData = {
+      "bookings.$.pin": pin,
+      "bookings.$.paymentStatus":
+        paymentStatus === "PAID" && payment?.status === "captured"
+          ? "PAID"
+          : "FAILED",
+      "bookings.$.transactionId": razorpay_payment_id,
+      "bookings.$.orderId": razorpay_order_id,
+      "bookings.$.Payment_Mode": paymentMethod || "UNKNOWN",
+      "bookings.$.failureReason":
+        failureReason ||
+        (payment?.status !== "captured"
+          ? payment?.error_description || "Payment failed"
+          : null),
+    };
+
+    // Update amount based on payment type
+    if (paymentStatus === "PAID" && payment?.status === "captured") {
+      const user = await User.findOne({
+        email: userEmail,
+        "bookings._id": bookingId,
+      });
+      if (user) {
+        const booking = user.bookings.id(bookingId);
+        if (booking) {
+          const paymentAmount = payment.amount / 100; // Convert paise to rupees
+          if (paymentType === "initial") {
+            // For initial payment, set amount to the paid amount
+            updateData["bookings.$.amount"] = paymentAmount;
+          } else if (paymentType === "remaining") {
+            // For remaining payment, increment amount
+            updateData["bookings.$.amount"] =
+              (booking.amount || 0) + paymentAmount;
+          }
+        }
+      }
+    }
+
+    // Update booking
     const user = await User.findOneAndUpdate(
-      { email: userEmail, 'bookings._id': bookingId },
-      {
-        $set: {
-          'bookings.$.pin': pin,
-          'bookings.$.paymentStatus':
-            paymentStatus === 'PAID' && payment?.status === 'captured'
-              ? 'PAID'
-              : 'FAILED',
-          'bookings.$.transactionId': razorpay_payment_id,
-          'bookings.$.orderId': razorpay_order_id,
-          'bookings.$.Payment_Mode': paymentMethod || 'UNKNOWN',
-          'bookings.$.failureReason':
-            failureReason ||
-            (payment?.status !== 'captured'
-              ? payment?.error_description || 'Payment failed'
-              : null),
-        },
-      },
+      { email: userEmail, "bookings._id": bookingId },
+      { $set: updateData },
       { new: true }
     );
 
     if (!user) {
-      // console.error('User or booking not found:', { userEmail, bookingId });
-      return res.status(404).json({ error: 'User or booking not found' });
+      return res.status(404).json({ error: "User or booking not found" });
     }
 
-    // Log the updated booking to verify fields
+    // Log the updated booking
     const updatedBooking = user.bookings.find(
       (b) => b._id.toString() === bookingId
     );
-    // console.log('Updated booking in MongoDB:', updatedBooking);
+    console.log("Updated booking in MongoDB:", updatedBooking);
 
     res.json({
       message:
-        paymentStatus === 'PAID'
-          ? 'Payment verified successfully'
-          : 'Payment failed',
+        paymentStatus === "PAID"
+          ? "Payment verified successfully"
+          : "Payment failed",
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
       bookingId,
       paymentStatus,
-      paymentMethod: paymentMethod || 'UNKNOWN',
+      paymentMethod: paymentMethod || "UNKNOWN",
       failureReason,
     });
   } catch (err) {
-    // console.error('Error in /order/validate:', err);
+    console.error("Error in /order/validate:", err);
     res.status(500).json({ error: err.message, details: err.stack });
   }
 });
 
-router.get('/verify', async (req, res) => {
+// Route: Verify order (mandatory, unchanged)
+router.get("/verify", async (req, res) => {
   try {
     const { order_id } = req.query;
     if (!order_id) {
-      return res.status(400).json({ error: 'Order ID is required' });
+      return res.status(400).json({ error: "Order ID is required" });
     }
 
     // Find booking by orderId
-    const user = await User.findOne({ 'bookings.orderId': order_id });
+    const user = await User.findOne({ "bookings.orderId": order_id });
     if (!user) {
       // console.error('Booking not found for order_id:', order_id);
-      return res.status(404).json({ error: 'Booking not found' });
+      return res.status(404).json({ error: "Booking not found" });
     }
 
     const booking = user.bookings.find((b) => b.orderId === order_id);
@@ -340,7 +353,7 @@ router.get('/verify', async (req, res) => {
       //   'Booking not found in user bookings for order_id:',
       //   order_id
       // );
-      return res.status(404).json({ error: 'Booking not found' });
+      return res.status(404).json({ error: "Booking not found" });
     }
 
     // Fetch order details from Razorpay
@@ -365,7 +378,7 @@ router.get('/verify', async (req, res) => {
         orderId: booking.orderId,
         amount: booking.amount,
         total_amount: booking.total_amount,
-        Payment_Mode: booking.Payment_Mode || 'UNKNOWN',
+        Payment_Mode: booking.Payment_Mode || "UNKNOWN",
         createdAt: booking.createdAt,
         parlorName: booking.parlorName,
         service: booking.service,
@@ -375,13 +388,73 @@ router.get('/verify', async (req, res) => {
         favoriteEmployee: booking.favoriteEmployee,
         relatedServices: booking.relatedServices || [],
         failureReason: booking.failureReason || null,
-        currency: order?.currency || 'INR',
+        currency: order?.currency || "INR",
       },
     };
 
     res.json(response);
   } catch (err) {
     // console.error('Error in /verify:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route: Create order for remaining amount payment (updated)
+router.post("/remaining-order", async (req, res) => {
+  try {
+    const { userEmail, bookingId, amount } = req.body;
+
+    // Validate required fields
+    if (!userEmail || !bookingId || !amount) {
+      return res
+        .status(400)
+        .json({ error: "userEmail, bookingId, and amount are required" });
+    }
+
+    // Validate amount is a positive number
+    if (isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    // Find user and booking
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const booking = user.bookings.id(bookingId);
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    // Validate amount matches remaining amount
+    const remainingAmount = booking.total_amount - (booking.amount || 0);
+    if (amount !== remainingAmount) {
+      return res
+        .status(400)
+        .json({ error: "Amount does not match remaining amount" });
+    }
+
+    // Create Razorpay order
+    const options = {
+      amount: Math.round(amount * 100), // Convert to paise
+      currency: "INR",
+      receipt: `remaining_${bookingId}`,
+      notes: { bookingId, userEmail, paymentType: "remaining" },
+    };
+
+    const order = await razorpay.orders.create(options);
+    if (!order) {
+      return res.status(500).json({ error: "Failed to create order" });
+    }
+
+    // Update booking with new orderId
+    booking.orderId = order.id;
+    await user.save();
+
+    // Return order and booking details
+    res.json({ order, bookingId, booking });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
