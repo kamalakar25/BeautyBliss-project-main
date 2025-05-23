@@ -1,4 +1,3 @@
-
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -11,4 +10,105 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+
+/* ------------------------language */
+/* index.css */
+
+/* Hide the Google Translate top banner */
+.goog-te-banner-frame {
+  display: none !important;
+}
+
+/* Hide the Google Translate pop-up */
+body > .skiptranslate {
+  display: none !important;
+}
+
+/* Prevent layout shift */
+html,
+body {
+  margin-top: 0px !important;
+  padding-top: 0px !important;
+  overflow-y: auto !important;
+  position: relative !important;
+  top: 0px !important;
+}
+
+/* Hide Google Translate toolbar */
+.goog-te-gadget {
+  font-size: 0 !important;
+}
+
+/* Hide Google Translate loading icon */
+.goog-te-spinner-pos,
+.goog-te-spinner {
+  display: none !important;
+}
+
+/* Hide 'Powered by Google Translate' text */
+.goog-logo-link,
+.goog-te-gadget span {
+  display: none !important;
+}
+
+/* Hide the dropdown arrow in the Google Translate widget */
+.goog-te-gadget-icon {
+  display: none !important;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  /* Navbar container - keeps all elements in one row */
+  .navbar-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 5px; /* Minimal spacing */
+    flex-wrap: nowrap;
+  }
+
+  /* Google Translate Dropdown */
+  #google_translate_element select {
+    display: inline-block; /* Ensures inline-block display */
+    width: 20% !important; /* Set width to 20% */
+    min-width: 60px;
+    font-size: 10px;
+    padding: 3px;
+    text-align: center;
+  }
+
+  /* Hide full language name and display only the language code */
+  .goog-te-combo {
+    text-transform: uppercase;
+    direction: ltr;
+    font-size: 14px;
+    width: 30% !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+  }
+
+  /* Adjust logo size */
+  .navbar-logo h1 {
+    font-size: 1.2rem !important; /* Adjusted for the BeautyBliss h1 */
+  }
+
+  /* Adjust logout button */
+  .navbar-links a[style*="color: red"] {
+    padding: 5px 8px;
+    font-size: 14px;
+  }
+
+  /* Hide Google Translate branding */
+  .goog-te-gadget span {
+    display: none !important;
+  }
+
+  #google_translate_element {
+    width: 70px !important;
+  }
 }
