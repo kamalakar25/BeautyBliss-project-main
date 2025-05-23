@@ -75,7 +75,7 @@ const Pay = () => {
         ).map((term) => response.data.find((item) => item.term === term));
         setTerms(uniqueTerms);
       } catch (error) {
-        console.error('Pay: Failed to fetch terms:', error.message);
+        // console.error('Pay: Failed to fetch terms:', error.message);
         setError('Failed to fetch terms and conditions. Please try again.');
         setTerms([]);
       }
@@ -136,9 +136,9 @@ const Pay = () => {
           bookingId,
         }
       );
-      console.log('Pay: Notifications created successfully');
+      // console.log('Pay: Notifications created successfully');
     } catch (error) {
-      console.error('Pay: Failed to create notifications:', error.message);
+      // console.error('Pay: Failed to create notifications:', error.message);
       setError(
         'Failed to create booking notifications. Booking is still confirmed.'
       );
@@ -182,7 +182,7 @@ const Pay = () => {
         userEmail,
       };
 
-      console.log('Pay: Creating order with bookingData:', bookingData);
+      // console.log('Pay: Creating order with bookingData:', bookingData);
       const response = await axios.post(
         `${BASE_URL}/api/razorpay/order`,
         bookingData
@@ -203,7 +203,7 @@ const Pay = () => {
         handler: async function (response) {
           let pin = Math.floor(Math.random() * 90000) + 10000;
           try {
-            console.log('Pay: Validating payment with response:', response);
+            // console.log('Pay: Validating payment with response:', response);
             const validationResponse = await axios.post(
               `${BASE_URL}/api/razorpay/order/validate`,
               {
@@ -215,10 +215,10 @@ const Pay = () => {
                 bookingId,
               }
             );
-            console.log(
-              'Pay: Payment validation response:',
-              validationResponse.data
-            );
+            // console.log(
+            //   'Pay: Payment validation response:',
+            //   validationResponse.data
+            // );
 
             // Create notifications for user and service provider
             await createNotifications(
@@ -247,7 +247,7 @@ const Pay = () => {
               }
             );
           } catch (err) {
-            console.error('Pay: Payment verification failed:', err.message);
+            // console.error('Pay: Payment verification failed:', err.message);
             setError(
               `Payment verification failed: ${
                 err.response?.data?.error || err.message
@@ -292,7 +292,7 @@ const Pay = () => {
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', async function (response) {
         const failureReason = response.error.description || 'Payment failed';
-        console.error('Pay: Payment failed:', response.error);
+        // console.error('Pay: Payment failed:', response.error);
         setError(`Payment failed: ${failureReason}`);
         try {
           const errorResponse = await axios.post(
@@ -313,7 +313,7 @@ const Pay = () => {
             'FAILED'
           );
         } catch (err) {
-          console.error('Pay: Failed to validate failed payment:', err.message);
+          // console.error('Pay: Failed to validate failed payment:', err.message);
         }
         navigate(
           `/payment/callback?order_id=${response.error.metadata.order_id}`,
@@ -339,7 +339,7 @@ const Pay = () => {
       setShowSuccess(true);
       setError('');
     } catch (err) {
-      console.error('Pay: Error processing request:', err.message);
+      // console.error('Pay: Error processing request:', err.message);
       const errorMessage = err.response?.data?.error || err.message;
       setError(`Error processing request: ${errorMessage}`);
     }
