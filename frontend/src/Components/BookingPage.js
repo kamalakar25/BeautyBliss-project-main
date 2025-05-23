@@ -1,118 +1,97 @@
-import axios from 'axios';
-import { useEffect, useState } from 'react';
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
 const BookingPage = () => {
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [filteredBookings, setFilteredBookings] = useState([]);
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState(null);
   const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
-  const [upiId, setUpiId] = useState('');
-  const [upiError, setUpiError] = useState('');
-  const [newDate, setNewDate] = useState('');
-  const [newTime, setNewTime] = useState('');
+  const [comment, setComment] = useState("");
+  const [upiId, setUpiId] = useState("");
+  const [upiError, setUpiError] = useState("");
+  const [newDate, setNewDate] = useState("");
+  const [newTime, setNewTime] = useState("");
   const [availableSlots, setAvailableSlots] = useState([]);
-  const [rescheduleError, setRescheduleError] = useState('');
+  const [rescheduleError, setRescheduleError] = useState("");
   const [hoveredBookingId, setHoveredBookingId] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isComplaintModalOpen, setIsComplaintModalOpen] = useState(false);
-  const [complaint, setComplaint] = useState('');
-  const [newFavoriteEmployee, setNewFavoriteEmployee] = useState('');
+  const [complaint, setComplaint] = useState("");
+  const [newFavoriteEmployee, setNewFavoriteEmployee] = useState("");
   const [manPower, setManPower] = useState([]);
   const [bookedSlots, setBookedSlots] = useState([]);
-  const [parlorTimings, setParlorTimings] = useState({ fromTime: '', toTime: '' });
+  const [parlorTimings, setParlorTimings] = useState({
+    fromTime: "",
+    toTime: "",
+  });
 
-  // Fetch bookings
+  // Helper to fetch bookings
+  const fetchBookings = async () => {
+    const email = localStorage.getItem("email");
+    if (!email) {
+      alert("Please log in to view bookings.");
+      return [];
+    }
+    try {
+      const res = await axios.get(
+        `${BASE_URL}/api/users/customer/bookings/${email}`
+      );
+      const users = res.data;
+      const allBookings = users.flatMap((user) =>
+        user.bookings.map((booking) => ({
+          _id: booking._id,
+          transactionId: booking.transactionId,
+          customerName: booking.name,
+          serviceName: booking.service,
+          bookingDate: booking.date,
+          bookingTime: booking.time,
+          status: booking.paymentStatus,
+          parlorName: booking.parlorName,
+          parlorEmail: booking.parlorEmail || "",
+          totalAmount: booking.total_amount,
+          PaidAmount: booking.amount,
+          RemainingAmount: booking.total_amount - booking.amount,
+          paymentMode: booking.Payment_Mode,
+          relatedServices: booking.relatedServices?.join(", "),
+          bookingId: booking.bookingId || booking._id,
+          rating: booking.userRating || null,
+          comment: booking.userReview || null,
+          orderId: booking.orderId,
+          pin: booking.pin,
+          complaint: booking.userComplaint || null,
+          confirmed: booking.confirmed,
+          refundedAmount: booking.refundedAmount || 0,
+          upiId: booking.upiId || null,
+          refundStatus: booking.refundStatus || "NONE",
+          favoriteEmployee: booking.favoriteEmployee || "",
+          duration: booking.duration || 60,
+        }))
+      );
+      setBookings(allBookings);
+      setFilteredBookings(allBookings.reverse());
+      return allBookings;
+    } catch (error) {
+      alert("Failed to fetch bookings. Please try again.");
+      return [];
+    }
+  };
+
+  // Fetch bookings on mount
   useEffect(() => {
-    const fetchBookings = async () => {
-      const email = localStorage.getItem('email');
-      if (!email) {
-        alert('Please log in to view bookings.');
-        return;
-      }
-      try {
-        const res = await axios.get(
-          `${BASE_URL}/api/users/customer/bookings/${email}`
-        );
-        const users = res.data;
-        const allBookings = users.flatMap((user) =>
-          user.bookings.map((booking) => ({
-            _id: booking._id,
-            transactionId: booking.transactionId,
-            customerName: booking.name,
-            serviceName: booking.service,
-            bookingDate: booking.date,
-            bookingTime: booking.time,
-            status: booking.paymentStatus,
-            parlorName: booking.parlorName,
-            parlorEmail: booking.parlorEmail || '',
-            totalAmount: booking.total_amount,
-            PaidAmount: booking.amount,
-            RemainingAmount: booking.total_amount - booking.amount,
-            paymentMode: booking.Payment_Mode,
-            relatedServices: booking.relatedServices?.join(', '),
-            bookingId: booking.bookingId || booking._id,
-            rating: booking.userRating || null,
-            comment: booking.userReview || null,
-            orderId: booking.orderId,
-            pin: booking.pin,
-            complaint: booking.userComplaint || null,
-            confirmed: booking.confirmed,
-            refundedAmount: booking.refundedAmount || 0,
-            upiId: booking.upiId || null,
-            refundStatus: booking.refundStatus || 'NONE',
-            favoriteEmployee: booking.favoriteEmployee || '',
-            duration: booking.duration || 60,
-          }))
-        );
-        setBookings(allBookings);
-        setFilteredBookings(allBookings.reverse());
-      } catch (error) {
-        alert('Failed to fetch bookings. Please try again.');
-      }
-    };
-
     fetchBookings();
   }, []);
 
-  // Helper to fetch parlorEmail by parlorName
-  const fetchParlorEmail = async (parlorName) => {
-    try {
-      const response = await axios.get(`${BASE_URL}/api/admin/parlor-by-name`, {
-        params: { name: parlorName },
-      });
-      return response.data.email;
-    } catch (error) {
-      console.error('Error fetching parlor email:', error);
-      return '';
-    }
-  };
-
-  // Fetch parlor timings
-  const fetchParlorTimings = async (parlorEmail) => {
-    try {
-      const response = await axios.get(`${BASE_URL}/api/admin/parlor/${parlorEmail}`);
-      const { fromTime, toTime } = response.data.availableTime || {};
-      if (fromTime && toTime) {
-        setParlorTimings({ fromTime, toTime });
-      } else {
-        setRescheduleError('Parlor timings not available.');
-        setAvailableSlots([]);
-      }
-    } catch (error) {
-      setRescheduleError('Failed to fetch parlor timings.');
-      setAvailableSlots([]);
-    }
-  };
-
+  // Filter bookings based on status
   useEffect(() => {
-    if (filterStatus === 'all') {
+    if (filterStatus === "all") {
       setFilteredBookings(bookings);
     } else {
       setFilteredBookings(
@@ -124,6 +103,7 @@ const BookingPage = () => {
     }
   }, [filterStatus, bookings]);
 
+  // Handle click outside for mobile popups
   useEffect(() => {
     if (!isMobile || !hoveredBookingId) return;
 
@@ -151,20 +131,50 @@ const BookingPage = () => {
       }
     };
 
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, [isMobile, hoveredBookingId]);
 
+  // Fetch manpower and parlor timings for reschedule modal
   useEffect(() => {
     if (isRescheduleModalOpen && selectedBookingId) {
       const selectedBooking = bookings.find((b) => b._id === selectedBookingId);
       if (selectedBooking?.parlorEmail) {
         fetchManPower(selectedBooking.parlorEmail);
         fetchParlorTimings(selectedBooking.parlorEmail);
-        setNewFavoriteEmployee(selectedBooking.favoriteEmployee || '');
+        setNewFavoriteEmployee(selectedBooking.favoriteEmployee || "");
       }
     }
   }, [isRescheduleModalOpen, selectedBookingId]);
+
+  const fetchParlorEmail = async (parlorName) => {
+    try {
+      const response = await axios.get(`${BASE_URL}/api/admin/parlor-by-name`, {
+        params: { name: parlorName },
+      });
+      return response.data.email;
+    } catch (error) {
+      return "";
+    }
+  };
+
+  const fetchParlorTimings = async (parlorEmail) => {
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/api/admin/parlor/${parlorEmail}`
+      );
+      const { fromTime, toTime } = response.data.availableTime || {};
+      if (fromTime && toTime) {
+        setParlorTimings({ fromTime, toTime });
+      } else {
+        setRescheduleError("Parlor timings not available.");
+        setAvailableSlots([]);
+      }
+    } catch (error) {
+      setRescheduleError("Failed to fetch parlor timings.");
+      setAvailableSlots([]);
+    }
+  };
 
   const fetchManPower = async (parlorEmail) => {
     try {
@@ -173,31 +183,173 @@ const BookingPage = () => {
       );
       setManPower(response.data);
     } catch (error) {
-      console.error(
-        'Error fetching manpower:',
-        error.response?.data || error.message
-      );
       setManPower([]);
     }
   };
 
+  const handlePayRemaining = async (booking) => {
+    if (!window.Razorpay) {
+      alert("Razorpay SDK not loaded. Please refresh the page.");
+      return;
+    }
+
+    try {
+      const userEmail = localStorage.getItem("email");
+      if (!userEmail) {
+        alert("User email not found. Please log in again.");
+        return;
+      }
+
+      const bookingData = {
+        userEmail,
+        bookingId: booking._id,
+        amount: booking.RemainingAmount,
+      };
+
+      const response = await axios.post(
+        `${BASE_URL}/api/razorpay/remaining-order`,
+        bookingData
+      );
+      const { order, bookingId } = response.data;
+
+      if (!order || !bookingId) {
+        throw new Error("Failed to create order");
+      }
+
+      const options = {
+        key: "rzp_test_UlCC6Rw2IJrhyh",
+        amount: order.amount,
+        currency: order.currency,
+        name: "Parlor Booking",
+        description: `Remaining payment for booking ${bookingId}`,
+        order_id: order.id,
+        handler: async function (response) {
+          try {
+            const validationResponse = await axios.post(
+              `${BASE_URL}/api/razorpay/order/validate`,
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                userEmail,
+                bookingId,
+                pin: booking.pin || "0000",
+                paymentType: "remaining", // Added paymentType
+              }
+            );
+
+            // Refetch bookings to ensure UI reflects database state
+            const updatedBookings = await fetchBookings();
+
+            // Update state immediately for smooth UX
+            setBookings(
+              updatedBookings.map((b) =>
+                b._id === booking._id
+                  ? {
+                      ...b,
+                      PaidAmount: b.totalAmount,
+                      RemainingAmount: 0,
+                      transactionId: response.razorpay_payment_id,
+                      paymentStatus: "PAID",
+                    }
+                  : b
+              )
+            );
+
+            alert("Remaining payment successful!");
+            navigate(
+              `/payment/callback?order_id=${response.razorpay_order_id}`,
+              {
+                state: {
+                  parlor: {
+                    name: booking.parlorName,
+                    email: booking.parlorEmail,
+                  },
+                  totalAmount: booking.totalAmount,
+                  service: booking.serviceName,
+                  name: booking.customerName,
+                  date: booking.bookingDate,
+                  time: booking.bookingTime,
+                  bookingId,
+                  paymentStatus: "PAID",
+                  transactionId: response.razorpay_payment_id,
+                  orderId: response.razorpay_order_id,
+                  currency: order.currency,
+                  amount: booking.RemainingAmount,
+                  total_amount: booking.totalAmount,
+                  createdAt: new Date().toISOString(),
+                },
+              }
+            );
+          } catch (err) {
+            alert(
+              `Payment verification failed: ${
+                err.response?.data?.error || err.message
+              }`
+            );
+          }
+        },
+        prefill: {
+          name: booking.customerName,
+          email: userEmail,
+          contact: "9234567890",
+        },
+        notes: { bookingId, userEmail, paymentType: "remaining" },
+        theme: { color: "#4a3f8c" },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", async function (response) {
+        const failureReason = response.error.description || "Payment failed";
+        alert(`Payment failed: ${failureReason}`);
+        navigate(
+          `/payment/callback?order_id=${response.error.metadata.order_id}`,
+          {
+            state: {
+              parlor: { name: booking.parlorName, email: booking.parlorEmail },
+              totalAmount: booking.totalAmount,
+              service: booking.serviceName,
+              name: booking.customerName,
+              date: booking.bookingDate,
+              time: booking.bookingTime,
+              bookingId,
+              paymentStatus: "FAILED",
+              transactionId: response.error.metadata.payment_id,
+              orderId: response.error.metadata.order_id,
+              failureReason,
+              currency: order.currency,
+              amount: booking.RemainingAmount,
+              total_amount: booking.totalAmount,
+              createdAt: new Date().toISOString(),
+            },
+          }
+        );
+      });
+      rzp.open();
+    } catch (err) {
+      alert(
+        `Error processing payment: ${err.response?.data?.error || err.message}`
+      );
+    }
+  };
+
   const getStatusColor = (status) => {
-    if (!status) return '#0e0f0f';
+    if (!status) return "#0e0f0f";
     const lowerStatus = status.toLowerCase();
-    if (lowerStatus === 'completed' || lowerStatus === 'paid') return '#201548';
-    if (lowerStatus === 'pending') return '#FFC107';
-    if (lowerStatus === 'cancelled') return '#F44336';
-    return '#0e0f0f';
+    if (lowerStatus === "completed" || lowerStatus === "paid") return "#201548";
+    if (lowerStatus === "pending") return "#FFC107";
+    if (lowerStatus === "cancelled") return "#F44336";
+    return "#0e0f0f";
   };
 
   const getRefundStatusColor = (refundStatus) => {
-    if (!refundStatus) return '#0e0f0f';
+    if (!refundStatus) return "#0e0f0f";
     const lowerStatus = refundStatus.toLowerCase();
-    if (lowerStatus === 'pending') return '#FFC107';
-    if (lowerStatus === 'approved') return '#201548';
-    if (lowerStatus === 'rejected') return '#F44336';
-    if (lowerStatus === 'none') return '#0e0f0f';
-    return '#0e0f0f';
+    if (lowerStatus === "pending") return "#FFC107";
+    if (lowerStatus === "approved") return "#201548";
+    if (lowerStatus === "rejected") return "#F44336";
+    if (lowerStatus === "none") return "#0e0f0f";
+    return "#0e0f0f";
   };
 
   const isFutureDate = (bookingDate) => {
@@ -221,7 +373,7 @@ const BookingPage = () => {
   const openModal = (bookingId) => {
     setSelectedBookingId(bookingId);
     setRating(0);
-    setComment('');
+    setComment("");
     setIsModalOpen(true);
   };
 
@@ -229,64 +381,69 @@ const BookingPage = () => {
     setIsModalOpen(false);
     setSelectedBookingId(null);
     setRating(0);
-    setComment('');
+    setComment("");
   };
 
   const openCancelModal = (bookingId) => {
     setSelectedBookingId(bookingId);
-    setUpiId('');
-    setUpiError('');
+    setUpiId("");
+    setUpiError("");
     setIsCancelModalOpen(true);
   };
 
   const closeCancelModal = () => {
     setIsCancelModalOpen(false);
     setSelectedBookingId(null);
-    setUpiId('');
-    setUpiError('');
+    setUpiId("");
+    setUpiError("");
   };
 
   const openRescheduleModal = (bookingId) => {
     setSelectedBookingId(bookingId);
     const selectedBooking = bookings.find((b) => b._id === bookingId);
     const duration = selectedBooking
-      ? 60 + (selectedBooking.relatedServices?.split(', ').length - 1) * 30
+      ? 60 + (selectedBooking.relatedServices?.split(", ").length - 1) * 30
       : 60;
-    setNewDate(selectedBooking?.bookingDate.split('T')[0] || '');
-    setNewTime('');
+    setNewDate(selectedBooking?.bookingDate.split("T")[0] || "");
+    setNewTime("");
     setAvailableSlots([]);
-    setRescheduleError('');
-    setNewFavoriteEmployee(selectedBooking?.favoriteEmployee || '');
+    setRescheduleError("");
+    setNewFavoriteEmployee(selectedBooking?.favoriteEmployee || "");
     setIsRescheduleModalOpen(true);
     if (selectedBooking?.bookingDate && selectedBooking?.parlorEmail) {
-      fetchAvailableSlots(bookingId, selectedBooking.bookingDate.split('T')[0], selectedBooking.favoriteEmployee, duration);
+      fetchAvailableSlots(
+        bookingId,
+        selectedBooking.bookingDate.split("T")[0],
+        selectedBooking.favoriteEmployee,
+        duration
+      );
     }
   };
 
   const closeRescheduleModal = () => {
     setIsRescheduleModalOpen(false);
     setSelectedBookingId(null);
-    setNewDate('');
-    setNewTime('');
+    setNewDate("");
+    setNewTime("");
     setAvailableSlots([]);
-    setRescheduleError('');
-    setNewFavoriteEmployee('');
+    setRescheduleError("");
+    setNewFavoriteEmployee("");
   };
 
   const openComplaintModal = (bookingId) => {
     setSelectedBookingId(bookingId);
-    setComplaint('');
+    setComplaint("");
     setIsComplaintModalOpen(true);
   };
 
   const closeComplaintModal = () => {
     setIsComplaintModalOpen(false);
     setSelectedBookingId(null);
-    setComplaint('');
+    setComplaint("");
   };
 
   const handleBackdropClick = (e) => {
-    if (e.target.className === 'modal') {
+    if (e.target.className === "modal") {
       closeModal();
       closeComplaintModal();
       closeCancelModal();
@@ -303,16 +460,14 @@ const BookingPage = () => {
     return upiRegex.test(upi);
   };
 
-  // Parse 12-hour time format to minutes (kept for compatibility)
   const parseTimeToMinutes = (timeStr) => {
-    const [time, period] = timeStr.split(' ');
-    let [hours, minutes] = time.split(':').map(Number);
-    if (period && period.toLowerCase() === 'pm' && hours !== 12) hours += 12;
-    if (period && period.toLowerCase() === 'am' && hours === 12) hours = 0;
+    const [time, period] = timeStr.split(" ");
+    let [hours, minutes] = time.split(":").map(Number);
+    if (period && period.toLowerCase() === "pm" && hours !== 12) hours += 12;
+    if (period && period.toLowerCase() === "am" && hours === 12) hours = 0;
     return hours * 60 + minutes;
   };
 
-  // Generate time slots in HH:mm-HH:mm format
   const generateTimeSlots = (startTime, endTime, interval = 60) => {
     const slots = [];
     const start = parseTime(startTime);
@@ -327,27 +482,29 @@ const BookingPage = () => {
   };
 
   const parseTime = (timeStr) => {
-    const [hours, minutes] = timeStr.split(':').map(Number);
+    const [hours, minutes] = timeStr.split(":").map(Number);
     return hours * 60 + minutes;
   };
 
   const formatTime = (minutes) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, "0")}:${mins
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   const timeToMinutes = (time) => {
-    const [hours, minutes] = time.split(':').map(Number);
+    const [hours, minutes] = time.split(":").map(Number);
     return hours * 60 + minutes;
   };
 
   const isSlotAvailable = (slot, duration, bookedSlots) => {
-    const slotStart = timeToMinutes(slot.split('-')[0]);
+    const slotStart = timeToMinutes(slot.split("-")[0]);
     const slotEnd = slotStart + duration;
 
     for (const booked of bookedSlots) {
-      const bookedStart = timeToMinutes(booked.time.split('-')[0]);
+      const bookedStart = timeToMinutes(booked.time.split("-")[0]);
       const bookedEnd = bookedStart + (booked.duration || 60);
 
       if (!(slotEnd <= bookedStart || slotStart >= bookedEnd)) {
@@ -381,25 +538,26 @@ const BookingPage = () => {
       const currentHours = currentTime.getHours();
       const currentMinutes = currentTime.getMinutes();
       const currentTimeInMinutes = currentHours * 60 + currentMinutes;
-      const slotStart = timeToMinutes(slot.split('-')[0]);
+      const slotStart = timeToMinutes(slot.split("-")[0]);
       return slotStart <= currentTimeInMinutes;
     }
     return false;
   };
 
-  // Fetch booked slots
   const fetchBookedSlots = async (employeeName, date) => {
-    const email = localStorage.getItem('email');
+    const email = localStorage.getItem("email");
     try {
-      const response = await axios.get(`${BASE_URL}/api/users/customer/bookings/${email}`);
+      const response = await axios.get(
+        `${BASE_URL}/api/users/customer/bookings/${email}`
+      );
       const filteredBookings = response.data
         .flatMap((user) => user.bookings)
         .filter(
           (booking) =>
             booking.favoriteEmployee === employeeName &&
             booking.date &&
-            typeof booking.date === 'string' &&
-            booking.date.split('T')[0] === date
+            typeof booking.date === "string" &&
+            booking.date.split("T")[0] === date
         )
         .map((booking) => ({
           time: booking.time,
@@ -407,16 +565,19 @@ const BookingPage = () => {
         }));
       setBookedSlots(filteredBookings);
     } catch (error) {
-      console.error('Error fetching booked slots:', error);
       setBookedSlots([]);
     }
   };
 
-  // Updated fetchAvailableSlots to match BookSlot.js
-  const fetchAvailableSlots = async (bookingId, date, favoriteEmployee, duration) => {
+  const fetchAvailableSlots = async (
+    bookingId,
+    date,
+    favoriteEmployee,
+    duration
+  ) => {
     const selectedBooking = bookings.find((b) => b._id === bookingId);
     if (!selectedBooking) {
-      setRescheduleError('Booking not found.');
+      setRescheduleError("Booking not found.");
       setAvailableSlots([]);
       return;
     }
@@ -430,65 +591,71 @@ const BookingPage = () => {
     if (!parlorEmail) {
       parlorEmail = await fetchParlorEmail(selectedBooking.parlorName);
       if (!parlorEmail) {
-        setRescheduleError('Unable to fetch parlor information.');
+        setRescheduleError("Unable to fetch parlor information.");
         setAvailableSlots([]);
         return;
       }
     }
 
     try {
-      // Ensure parlor timings are available
       if (!parlorTimings.fromTime || !parlorTimings.toTime) {
         await fetchParlorTimings(parlorEmail);
       }
 
-      // Generate slots
-      const slots = generateTimeSlots(parlorTimings.fromTime, parlorTimings.toTime, 60);
+      const slots = generateTimeSlots(
+        parlorTimings.fromTime,
+        parlorTimings.toTime,
+        60
+      );
 
-      // Fetch booked slots
       await fetchBookedSlots(favoriteEmployee, date);
 
-      // Filter available slots
-      const available = slots.filter((slot) => isSlotAvailable(slot, duration, bookedSlots));
+      const available = slots.filter((slot) =>
+        isSlotAvailable(slot, duration, bookedSlots)
+      );
       setAvailableSlots(available);
 
       if (available.length === 0) {
-        setRescheduleError('No available slots for the selected date and employee.');
+        setRescheduleError(
+          "No available slots for the selected date and employee."
+        );
       } else {
-        setRescheduleError('');
+        setRescheduleError("");
       }
     } catch (error) {
-      console.error('Error fetching slots:', error);
-      setRescheduleError('Failed to fetch available slots. Please try again.');
+      setRescheduleError("Failed to fetch available slots. Please try again.");
       setAvailableSlots([]);
     }
   };
 
-  // Handle date and employee change
   const handleDateChange = (e) => {
     const date = e.target.value;
     setNewDate(date);
-    setNewTime('');
+    setNewTime("");
     if (date && selectedBookingId && newFavoriteEmployee) {
       const selectedBooking = bookings.find((b) => b._id === selectedBookingId);
       const duration = selectedBooking
-        ? 60 + (selectedBooking.relatedServices?.split(', ').length - 1) * 30
+        ? 60 + (selectedBooking.relatedServices?.split(", ").length - 1) * 30
         : 60;
-      fetchAvailableSlots(selectedBookingId, date, newFavoriteEmployee, duration);
+      fetchAvailableSlots(
+        selectedBookingId,
+        date,
+        newFavoriteEmployee,
+        duration
+      );
     } else {
       setAvailableSlots([]);
     }
   };
 
-  // Handle employee change
   const handleEmployeeChange = (e) => {
     const employee = e.target.value;
     setNewFavoriteEmployee(employee);
-    setNewTime('');
+    setNewTime("");
     if (newDate && selectedBookingId && employee) {
       const selectedBooking = bookings.find((b) => b._id === selectedBookingId);
       const duration = selectedBooking
-        ? 60 + (selectedBooking.relatedServices?.split(', ').length - 1) * 30
+        ? 60 + (selectedBooking.relatedServices?.split(", ").length - 1) * 30
         : 60;
       fetchAvailableSlots(selectedBookingId, newDate, employee, duration);
     } else {
@@ -496,16 +663,15 @@ const BookingPage = () => {
     }
   };
 
-  // Get tomorrow's date in YYYY-MM-DD format
   const getTomorrowDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return tomorrow.toISOString().split("T")[0];
   };
 
   const handleRescheduleBooking = async () => {
     if (!selectedBookingId || !newDate || !newTime || !newFavoriteEmployee) {
-      setRescheduleError('Please select a date, time, and employee.');
+      setRescheduleError("Please select a date, time, and employee.");
       return;
     }
 
@@ -515,7 +681,7 @@ const BookingPage = () => {
     if (!selectedBooking) return;
 
     try {
-      const email = localStorage.getItem('email');
+      const email = localStorage.getItem("email");
       const response = await axios.post(
         `${BASE_URL}/api/users/reschedule/booking`,
         {
@@ -540,13 +706,13 @@ const BookingPage = () => {
               : booking
           )
         );
-        alert('Booking rescheduled successfully.');
+        alert("Booking rescheduled successfully.");
         closeRescheduleModal();
       }
     } catch (error) {
       setRescheduleError(
         error.response?.data?.message ||
-          'Failed to reschedule booking. Please try again.'
+          "Failed to reschedule booking. Please try again."
       );
     }
   };
@@ -567,13 +733,13 @@ const BookingPage = () => {
       selectedBooking.PaidAmount === selectedBooking.totalAmount
     ) {
       if (!validateUpiId(upiId)) {
-        setUpiError('Please enter a valid UPI ID (e.g., name@bank)');
+        setUpiError("Please enter a valid UPI ID (e.g., name@bank)");
         return;
       }
     }
 
     try {
-      const email = localStorage.getItem('email');
+      const email = localStorage.getItem("email");
       const response = await axios.post(
         `${BASE_URL}/api/users/cancel/booking`,
         {
@@ -593,13 +759,13 @@ const BookingPage = () => {
             booking._id === selectedBookingId
               ? {
                   ...booking,
-                  status: 'CANCELLED',
-                  confirmed: 'Cancelled',
+                  status: "CANCELLED",
+                  confirmed: "Cancelled",
                   refundedAmount: isAdvancePayment
                     ? 0
                     : response.data.refundedAmount,
                   upiId: isAdvancePayment ? null : response.data.upiId,
-                  refundStatus: isAdvancePayment ? 'NONE' : 'PENDING',
+                  refundStatus: isAdvancePayment ? "NONE" : "PENDING",
                 }
               : booking
           )
@@ -607,7 +773,7 @@ const BookingPage = () => {
         alert(
           `Booking cancelled successfully. ${
             isAdvancePayment
-              ? 'No refund applicable for advance payment.'
+              ? "No refund applicable for advance payment."
               : `Refund is pending approval.`
           }`
         );
@@ -616,7 +782,7 @@ const BookingPage = () => {
     } catch (error) {
       alert(
         error.response?.data?.message ||
-          'Failed to cancel booking. Please try again.'
+          "Failed to cancel booking. Please try again."
       );
     }
   };
@@ -624,7 +790,7 @@ const BookingPage = () => {
   const handleSubmit = async () => {
     if (!selectedBookingId) return;
 
-    const email = localStorage.getItem('email');
+    const email = localStorage.getItem("email");
     const selectedBooking = bookings.find(
       (booking) => booking._id === selectedBookingId
     );
@@ -678,11 +844,11 @@ const BookingPage = () => {
               : booking
           )
         );
-        alert('Rating submitted successfully.');
+        alert("Rating submitted successfully.");
         closeModal();
       }
     } catch (error) {
-      alert('Failed to submit rating. Please try again.');
+      alert("Failed to submit rating. Please try again.");
     }
   };
 
@@ -694,11 +860,11 @@ const BookingPage = () => {
 
   const handleComplaintSubmit = async () => {
     if (!selectedBookingId || !complaint) {
-      alert('Please provide a complaint.');
+      alert("Please provide a complaint.");
       return;
     }
 
-    const email = localStorage.getItem('email');
+    const email = localStorage.getItem("email");
     const selectedBooking = bookings.find(
       (booking) => booking._id === selectedBookingId
     );
@@ -722,11 +888,11 @@ const BookingPage = () => {
               : booking
           )
         );
-        alert('Complaint submitted successfully.');
+        alert("Complaint submitted successfully.");
         closeComplaintModal();
       }
     } catch (error) {
-      alert('Failed to submit complaint. Please try again.');
+      alert("Failed to submit complaint. Please try again.");
     }
   };
 
@@ -737,59 +903,59 @@ const BookingPage = () => {
   };
 
   const handlePaidBookings = () => {
-    setFilterStatus('paid');
+    setFilterStatus("paid");
   };
 
   const handlePendingBookings = () => {
-    setFilterStatus('pending');
+    setFilterStatus("pending");
   };
 
   const handleAllBookings = () => {
-    setFilterStatus('all');
+    setFilterStatus("all");
   };
 
   // Render reschedule modal
   const renderRescheduleModal = () => {
     const selectedBooking = bookings.find((b) => b._id === selectedBookingId);
     const duration = selectedBooking
-      ? 60 + (selectedBooking.relatedServices?.split(', ').length - 1) * 30
+      ? 60 + (selectedBooking.relatedServices?.split(", ").length - 1) * 30
       : 60;
 
     return (
       <div
-        className='modal'
+        className="modal"
         onClick={handleBackdropClick}
         style={{
-          position: 'fixed',
+          position: "fixed",
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          backgroundColor: "rgba(0,0,0,0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           zIndex: 1000,
         }}
       >
         <div
-          className='modal-content'
+          className="modal-content"
           style={{
-            backgroundColor: '#ffffff',
-            padding: '1.5rem',
-            borderRadius: '8px',
-            maxWidth: '400px',
-            width: '90%',
-            boxShadow: '0 6px 24px rgba(0,0,0,0.12)',
+            backgroundColor: "#ffffff",
+            padding: "1.5rem",
+            borderRadius: "8px",
+            maxWidth: "400px",
+            width: "90%",
+            boxShadow: "0 6px 24px rgba(0,0,0,0.12)",
           }}
         >
           <h3
             style={{
-              textAlign: 'center',
-              marginBottom: '1rem',
-              fontSize: '1.2rem',
-              color: '#0e0f0f',
-              fontWeight: '600',
+              textAlign: "center",
+              marginBottom: "1rem",
+              fontSize: "1.2rem",
+              color: "#0e0f0f",
+              fontWeight: "600",
             }}
           >
             Reschedule Booking
@@ -799,18 +965,18 @@ const BookingPage = () => {
             onChange={handleEmployeeChange}
             disabled={!manPower.length}
             style={{
-              width: '100%',
-              padding: '0.5rem',
-              marginBottom: '1rem',
-              borderRadius: '4px',
-              border: '1px solid #ccc',
-              fontSize: '0.9rem',
+              width: "100%",
+              padding: "0.5rem",
+              marginBottom: "1rem",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              fontSize: "0.9rem",
             }}
           >
-            <option value=''>
+            <option value="">
               {manPower.length === 0
-                ? 'No employees available'
-                : 'Select Employee'}
+                ? "No employees available"
+                : "Select Employee"}
             </option>
             {manPower.map((employee) => (
               <option key={employee._id} value={employee.name}>
@@ -819,17 +985,17 @@ const BookingPage = () => {
             ))}
           </select>
           <input
-            type='date'
+            type="date"
             value={newDate}
             onChange={handleDateChange}
             min={getTomorrowDate()}
             style={{
-              width: '100%',
-              padding: '0.5rem',
-              marginBottom: '1rem',
-              borderRadius: '4px',
-              border: '1px solid #ccc',
-              fontSize: '0.9rem',
+              width: "100%",
+              padding: "0.5rem",
+              marginBottom: "1rem",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              fontSize: "0.9rem",
             }}
           />
           <select
@@ -839,18 +1005,18 @@ const BookingPage = () => {
               !newDate || !newFavoriteEmployee || availableSlots.length === 0
             }
             style={{
-              width: '100%',
-              padding: '0.5rem',
-              marginBottom: '1rem',
-              borderRadius: '4px',
-              border: '1px solid #ccc',
-              fontSize: '0.9rem',
+              width: "100%",
+              padding: "0.5rem",
+              marginBottom: "1rem",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              fontSize: "0.9rem",
             }}
           >
-            <option value=''>
+            <option value="">
               {availableSlots.length === 0 && newDate && newFavoriteEmployee
-                ? 'No slots available'
-                : 'Select Time'}
+                ? "No slots available"
+                : "Select Time"}
             </option>
             {availableSlots.map((slot, index) => (
               <option
@@ -858,33 +1024,33 @@ const BookingPage = () => {
                 value={slot}
                 disabled={!isSlotAvailable(slot, duration, bookedSlots)}
               >
-                {slot}{' '}
+                {slot}{" "}
                 {!isSlotAvailable(slot, duration, bookedSlots)
                   ? isPastSlot(slot)
-                    ? '(Past)'
-                    : '(Booked)'
-                  : ''}
+                    ? "(Past)"
+                    : "(Booked)"
+                  : ""}
               </option>
             ))}
           </select>
           {rescheduleError && (
             <p
-              style={{ color: 'red', fontSize: '0.9rem', marginBottom: '1rem' }}
+              style={{ color: "red", fontSize: "0.9rem", marginBottom: "1rem" }}
             >
               {rescheduleError}
             </p>
           )}
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
             <button
               onClick={handleRescheduleBooking}
               disabled={!newDate || !newTime || !newFavoriteEmployee}
               style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#201548',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '4px',
-                fontSize: '0.9rem',
+                padding: "0.5rem 1rem",
+                backgroundColor: "#201548",
+                color: "#fff",
+                border: "none",
+                borderRadius: "4px",
+                fontSize: "0.9rem",
               }}
             >
               Confirm Reschedule
@@ -892,11 +1058,11 @@ const BookingPage = () => {
             <button
               onClick={closeRescheduleModal}
               style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#ccc',
-                border: 'none',
-                borderRadius: '4px',
-                fontSize: '0.9rem',
+                padding: "0.5rem 1rem",
+                backgroundColor: "#ccc",
+                border: "none",
+                borderRadius: "4px",
+                fontSize: "0.9rem",
               }}
             >
               Close
@@ -910,9 +1076,9 @@ const BookingPage = () => {
   return (
     <div
       style={{
-        padding: '1rem',
-        minHeight: '100vh',
-        background: '#ffffff',
+        padding: "1rem",
+        minHeight: "100vh",
+        background: "#ffffff",
       }}
     >
       <style>
@@ -1042,7 +1208,7 @@ const BookingPage = () => {
           }
           @media (max-width: 768px) {
             .comment-popup, .complaint-popup {
-              display: ${hoveredBookingId ? 'block' : 'none'};
+              display: ${hoveredBookingId ? "block" : "none"};
             }
           }
           .filter-buttons {
@@ -1118,12 +1284,12 @@ const BookingPage = () => {
           .refund-status {
             font-weight: 600;
           }
-          .action-cancel, .action-reschedule {
+          .action-cancel, .action-reschedule, .action-pay {
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 0.3rem;
-            padding: 0.2rem;
+            padding: 0.2rem 0.5rem;
             border-radius: 5px;
           }
           .action-cancel {
@@ -1151,6 +1317,13 @@ const BookingPage = () => {
           }
           .action-reschedule:hover i {
             color: #ffffff;
+          }
+          .action-pay {
+            color: #ffffff;
+            background: #4a3f8c;
+          }
+          .action-pay:hover {
+            background: #6683a8;
           }
           .action-disabled {
             color: #ccc;
@@ -1242,31 +1415,31 @@ const BookingPage = () => {
         `}
       </style>
 
-      <div className='filter-buttons mt-5'>
+      <div className="filter-buttons mt-5">
         <button
-          className={`filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
+          className={`filter-btn ${filterStatus === "all" ? "active" : ""}`}
           onClick={handleAllBookings}
         >
           All Bookings
         </button>
         <button
-          className={`filter-btn ${filterStatus === 'paid' ? 'active' : ''}`}
+          className={`filter-btn ${filterStatus === "paid" ? "active" : ""}`}
           onClick={handlePaidBookings}
         >
           Confirmed Bookings
         </button>
         <button
-          className={`filter-btn ${filterStatus === 'pending' ? 'active' : ''}`}
+          className={`filter-btn ${filterStatus === "pending" ? "active" : ""}`}
           onClick={handlePendingBookings}
         >
           Failures Bookings
         </button>
       </div>
 
-      <div className='table-container'>
+      <div className="table-container">
         <table>
           <thead>
-            <tr style={{ background: '#e8ecef', color: '#0e0f0f' }}>
+            <tr style={{ background: "#e8ecef", color: "#0e0f0f" }}>
               <th style={headerCellStyle}>S.No</th>
               <th style={headerCellStyle}>Booking ID</th>
               <th style={headerCellStyle}>Transaction ID</th>
@@ -1291,61 +1464,66 @@ const BookingPage = () => {
                 <tr
                   key={booking._id}
                   style={{
-                    transition: 'all 0.3s ease',
+                    transition: "all 0.3s ease",
                     ...(index % 2 === 1 && {
-                      background: 'rgba(32, 21, 72, 0.05)',
+                      background: "rgba(32, 21, 72, 0.05)",
                     }),
                   }}
                 >
-                  <td style={tableCellStyle} data-label='S.No'>
+                  <td style={tableCellStyle} data-label="S.No">
                     {index + 1}
                   </td>
-                  <td style={tableCellStyle} data-label='Booking ID'>
-                    {booking.bookingId || 'NA'}
+                  <td style={tableCellStyle} data-label="Booking ID">
+                    {booking.bookingId || "NA"}
                   </td>
-                  <td style={tableCellStyle} data-label='Transaction ID'>
-                    {booking.transactionId || 'NA'}
+                  <td style={tableCellStyle} data-label="Transaction ID">
+                    {booking.transactionId || "NA"}
                   </td>
-                  <td style={tableCellStyle} data-label='Service'>
-                    {booking.serviceName || 'NA'}
+                  <td style={tableCellStyle} data-label="Service">
+                    {booking.serviceName || "NA"}
                   </td>
-                  <td style={tableCellStyle} data-label='Related Services'>
-                    {booking.relatedServices || 'NA'}
+                  <td style={tableCellStyle} data-label="Related Services">
+                    {booking.relatedServices || "NA"}
                   </td>
-                  <td style={tableCellStyle} data-label='Date'>
+                  <td style={tableCellStyle} data-label="Date">
                     {booking.bookingDate
                       ? new Date(booking.bookingDate).toLocaleDateString()
-                      : 'NA'}
+                      : "NA"}
                   </td>
                   <td
-                    style={{ ...tableCellStyle, whiteSpace: 'nowrap' }}
-                    data-label='Time'
+                    style={{ ...tableCellStyle, whiteSpace: "nowrap" }}
+                    data-label="Time"
                   >
-                    {booking.bookingTime || 'NA'}
+                    {booking.bookingTime || "NA"}
                   </td>
-                  <td style={tableCellStyle} data-label='Parlor Name'>
-                    {booking.parlorName || 'NA'}
+                  <td style={tableCellStyle} data-label="Parlor Name">
+                    {booking.parlorName || "NA"}
                   </td>
-                  <td style={tableCellStyle} data-label='Favorite Employee'>
-                    {booking.favoriteEmployee || 'NA'}
+                  <td style={tableCellStyle} data-label="Favorite Employee">
+                    {booking.favoriteEmployee || "NA"}
                   </td>
-                  <td style={tableCellStyle} data-label='Paid Amount'>
-                    {booking.status?.toLowerCase() === 'pending'
-                      ? 'N/A'
-                      : booking.PaidAmount || 'NA'}
+                  <td style={tableCellStyle} data-label="Paid Amount">
+                    {booking.PaidAmount || "NA"}
                   </td>
-                  <td style={tableCellStyle} data-label='Remaining Amount'>
-                    {booking.status?.toLowerCase() === 'pending'
-                      ? 'N/A'
-                      : booking.RemainingAmount || '0'}
+                  <td style={tableCellStyle} data-label="Remaining Amount">
+                    {booking.RemainingAmount > 0 ? (
+                      <span
+                        className="action-pay"
+                        onClick={() => handlePayRemaining(booking)}
+                      >
+                        Pay ₹{booking.RemainingAmount}
+                      </span>
+                    ) : (
+                      "₹0"
+                    )}
                   </td>
-                  <td style={tableCellStyle} data-label='PIN'>
-                    {booking.pin || 'NA'}
+                  <td style={tableCellStyle} data-label="PIN">
+                    {booking.pin || "NA"}
                   </td>
-                  <td style={tableCellStyle} data-label='Complaint'>
+                  <td style={tableCellStyle} data-label="Complaint">
                     {booking.complaint ? (
                       <div
-                        className='complaint-container'
+                        className="complaint-container"
                         data-booking-id={booking._id}
                         onMouseEnter={() =>
                           !isMobile && setHoveredBookingId(booking._id)
@@ -1355,51 +1533,51 @@ const BookingPage = () => {
                         }
                         onClick={() => handleComplaintClick(booking._id)}
                       >
-                        View{' '}
+                        View{" "}
                         <i
-                          className='fa-solid fa-eye'
-                          style={{ color: '#201548' }}
+                          className="fa-solid fa-eye"
+                          style={{ color: "#201548" }}
                         ></i>
                         {hoveredBookingId === booking._id &&
                           booking.complaint && (
                             <div
-                              className='complaint-popup'
+                              className="complaint-popup"
                               data-booking-id={booking._id}
                             >
                               {booking.complaint}
                             </div>
                           )}
                       </div>
-                    ) : booking.status?.toLowerCase() === 'pending' ? (
-                      <span style={{ color: '#ccc' }}>
+                    ) : booking.status?.toLowerCase() === "pending" ? (
+                      <span style={{ color: "#ccc" }}>
                         <i
-                          className='fa-solid fa-pen-to-square'
-                          style={{ color: '#ccc', fontSize: '20px' }}
+                          className="fa-solid fa-pen-to-square"
+                          style={{ color: "#ccc", fontSize: "20px" }}
                         ></i>
                       </span>
                     ) : isPastDate(booking.bookingDate) ? (
                       <span
                         onClick={() => openComplaintModal(booking._id)}
-                        style={{ cursor: 'pointer', color: '#201548' }}
+                        style={{ cursor: "pointer", color: "#201548" }}
                       >
                         <i
-                          className='fa-solid fa-pen-to-square'
-                          style={{ color: '#201548', fontSize: '20px' }}
+                          className="fa-solid fa-pen-to-square"
+                          style={{ color: "#201548", fontSize: "20px" }}
                         ></i>
                       </span>
                     ) : (
-                      <span style={{ color: '#ccc' }}>
+                      <span style={{ color: "#ccc" }}>
                         <i
-                          className='fa-solid fa-pen-to-square'
-                          style={{ color: '#ccc', fontSize: '20px' }}
+                          className="fa-solid fa-pen-to-square"
+                          style={{ color: "#ccc", fontSize: "20px" }}
                         ></i>
                       </span>
                     )}
                   </td>
-                  <td style={tableCellStyle} data-label='Rating'>
+                  <td style={tableCellStyle} data-label="Rating">
                     {booking.rating ? (
                       <div
-                        className='rating-container'
+                        className="rating-container"
                         data-booking-id={booking._id}
                         onMouseEnter={() =>
                           !isMobile && setHoveredBookingId(booking._id)
@@ -1409,82 +1587,82 @@ const BookingPage = () => {
                         }
                         onClick={() => handleRatingClick(booking._id)}
                       >
-                        {booking.rating}{' '}
+                        {booking.rating}{" "}
                         <i
-                          className='fa-solid fa-star'
-                          style={{ color: '#201548' }}
+                          className="fa-solid fa-star"
+                          style={{ color: "#201548" }}
                         ></i>
                         {hoveredBookingId === booking._id &&
                           booking.comment && (
                             <div
-                              className='comment-popup'
+                              className="comment-popup"
                               data-booking-id={booking._id}
                             >
                               {booking.comment}
                             </div>
                           )}
                       </div>
-                    ) : booking.status?.toLowerCase() === 'pending' ? (
-                      <span style={{ color: '#ccc' }}>
-                        Rate{' '}
+                    ) : booking.status?.toLowerCase() === "pending" ? (
+                      <span style={{ color: "#ccc" }}>
+                        Rate{" "}
                         <i
-                          className='fa-regular fa-star'
-                          style={{ color: '#ccc' }}
+                          className="fa-regular fa-star"
+                          style={{ color: "#ccc" }}
                         ></i>
                       </span>
                     ) : isPastDate(booking.bookingDate) ? (
                       <span
                         onClick={() => openModal(booking._id)}
-                        style={{ cursor: 'pointer', color: '#201548' }}
+                        style={{ cursor: "pointer", color: "#201548" }}
                       >
-                        Rate{' '}
+                        Rate{" "}
                         <i
-                          className='fa-regular fa-star'
-                          style={{ color: '#201548' }}
+                          className="fa-regular fa-star"
+                          style={{ color: "#201548" }}
                         ></i>
                       </span>
                     ) : (
-                      <span style={{ color: '#ccc' }}>
-                        Rate{' '}
+                      <span style={{ color: "#ccc" }}>
+                        Rate{" "}
                         <i
-                          className='fa-regular fa-star'
-                          style={{ color: '#ccc' }}
+                          className="fa-regular fa-star"
+                          style={{ color: "#ccc" }}
                         ></i>
                       </span>
                     )}
                   </td>
-                  <td style={tableCellStyle} data-label='Refund Status'>
+                  <td style={tableCellStyle} data-label="Refund Status">
                     <span
-                      className='refund-status'
+                      className="refund-status"
                       style={{
                         color: getRefundStatusColor(booking.refundStatus),
                       }}
                     >
-                      {booking.refundStatus || 'NA'}
+                      {booking.refundStatus || "NA"}
                       {booking.refundedAmount > 0 &&
                         ` (₹${booking.refundedAmount})`}
                     </span>
                   </td>
-                  <td style={tableCellStyle} data-label='Action'>
-                    {booking.status?.toLowerCase() === 'paid' &&
-                    booking.confirmed !== 'Cancelled' &&
+                  <td style={tableCellStyle} data-label="Action">
+                    {booking.status?.toLowerCase() === "paid" &&
+                    booking.confirmed !== "Cancelled" &&
                     isFutureDate(booking.bookingDate) ? (
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
                         <span
-                          className='action-cancel'
+                          className="action-cancel"
                           onClick={() => openCancelModal(booking._id)}
                         >
-                          Cancel <i className='fa-solid fa-times-circle' />
+                          Cancel <i className="fa-solid fa-times-circle" />
                         </span>
                         <span
-                          className='action-reschedule'
+                          className="action-reschedule"
                           onClick={() => openRescheduleModal(booking._id)}
                         >
-                          Reschedule <i className='fa-solid fa-calendar-alt' />
+                          Reschedule <i className="fa-solid fa-calendar-alt" />
                         </span>
                       </div>
                     ) : (
-                      <span className='action-disabled'>-</span>
+                      <span className="action-disabled">-</span>
                     )}
                   </td>
                 </tr>
@@ -1492,22 +1670,22 @@ const BookingPage = () => {
             ) : (
               <tr>
                 <td
-                  colSpan='15'
+                  colSpan="15"
                   style={{
-                    textAlign: 'center',
-                    padding: '2rem',
-                    color: '#0e0f0f',
-                    fontSize: '1.1rem',
-                    background: '#ffffff',
-                    display: 'block',
+                    textAlign: "center",
+                    padding: "2rem",
+                    color: "#0e0f0f",
+                    fontSize: "1.1rem",
+                    background: "#ffffff",
+                    display: "block",
                   }}
                 >
-                  No{' '}
-                  {filterStatus === 'paid'
-                    ? 'paid'
-                    : filterStatus === 'pending'
-                    ? 'pending'
-                    : ''}{' '}
+                  No{" "}
+                  {filterStatus === "paid"
+                    ? "paid"
+                    : filterStatus === "pending"
+                    ? "pending"
+                    : ""}{" "}
                   bookings found
                 </td>
               </tr>
@@ -1517,23 +1695,23 @@ const BookingPage = () => {
       </div>
 
       {isModalOpen && (
-        <div className='modal' onClick={handleBackdropClick}>
-          <div className='modal-content'>
+        <div className="modal" onClick={handleBackdropClick}>
+          <div className="modal-content">
             <h3
               style={{
-                textAlign: 'center',
-                marginBottom: '1rem',
-                fontSize: '1.2rem',
-                color: '#0e0f0f',
+                textAlign: "center",
+                marginBottom: "1rem",
+                fontSize: "1.2rem",
+                color: "#0e0f0f",
               }}
             >
               Rate This Service
             </h3>
-            <div className='star-rating'>
+            <div className="star-rating">
               {[1, 2, 3, 4, 5].map((star) => (
                 <span
                   key={star}
-                  className={`star ${star <= rating ? 'filled' : ''}`}
+                  className={`star ${star <= rating ? "filled" : ""}`}
                   onClick={() => handleRating(star)}
                 >
                   ★
@@ -1541,15 +1719,15 @@ const BookingPage = () => {
               ))}
             </div>
             <textarea
-              placeholder='Add your comments...'
+              placeholder="Add your comments..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
             />
-            <div className='modal-buttons'>
-              <button className='post-btn' onClick={handleSubmit}>
+            <div className="modal-buttons">
+              <button className="post-btn" onClick={handleSubmit}>
                 Post
               </button>
-              <button className='cancel-btn' onClick={closeModal}>
+              <button className="cancel-btn" onClick={closeModal}>
                 Cancel
               </button>
             </div>
@@ -1558,28 +1736,28 @@ const BookingPage = () => {
       )}
 
       {isComplaintModalOpen && (
-        <div className='modal' onClick={handleBackdropClick}>
-          <div className='modal-content'>
+        <div className="modal" onClick={handleBackdropClick}>
+          <div className="modal-content">
             <h3
               style={{
-                textAlign: 'center',
-                marginBottom: '1rem',
-                fontSize: '1.2rem',
-                color: '#0e0f0f',
+                textAlign: "center",
+                marginBottom: "1rem",
+                fontSize: "1.2rem",
+                color: "#0e0f0f",
               }}
             >
               File a Complaint
             </h3>
             <textarea
-              placeholder='Describe your issue...'
+              placeholder="Describe your issue..."
               value={complaint}
               onChange={(e) => setComplaint(e.target.value)}
             />
-            <div className='modal-buttons'>
-              <button className='post-btn' onClick={handleComplaintSubmit}>
+            <div className="modal-buttons">
+              <button className="post-btn" onClick={handleComplaintSubmit}>
                 Submit
               </button>
-              <button className='cancel-btn' onClick={closeComplaintModal}>
+              <button className="cancel-btn" onClick={closeComplaintModal}>
                 Cancel
               </button>
             </div>
@@ -1588,29 +1766,29 @@ const BookingPage = () => {
       )}
 
       {isCancelModalOpen && (
-        <div className='modal' onClick={handleBackdropClick}>
-          <div className='modal-content'>
+        <div className="modal" onClick={handleBackdropClick}>
+          <div className="modal-content">
             <h3
               style={{
-                textAlign: 'center',
-                marginBottom: '1rem',
-                fontSize: '1.2rem',
-                color: '#0e0f0f',
+                textAlign: "center",
+                marginBottom: "1rem",
+                fontSize: "1.2rem",
+                color: "#0e0f0f",
               }}
             >
               Cancel Booking
             </h3>
             <p
               style={{
-                marginBottom: '1rem',
-                fontSize: '0.9rem',
-                color: '#0e0f0f',
+                marginBottom: "1rem",
+                fontSize: "0.9rem",
+                color: "#0e0f0f",
               }}
             >
               {bookings.find((b) => b._id === selectedBookingId)?.PaidAmount ===
               bookings.find((b) => b._id === selectedBookingId)?.totalAmount *
                 0.25
-                ? 'Advance payment (25%) detected. No refund will be processed.'
+                ? "Advance payment (25%) detected. No refund will be processed."
                 : `Full payment detected. 25% will be deducted from refund. Refund amount: ₹${(
                     bookings.find((b) => b._id === selectedBookingId)
                       ?.PaidAmount * 0.75
@@ -1621,22 +1799,22 @@ const BookingPage = () => {
                 ?.totalAmount && (
               <>
                 <input
-                  type='text'
-                  placeholder='Enter UPI ID (e.g., name@bank)'
+                  type="text"
+                  placeholder="Enter UPI ID (e.g., name@bank)"
                   value={upiId}
                   onChange={(e) => {
                     setUpiId(e.target.value);
-                    setUpiError('');
+                    setUpiError("");
                   }}
                 />
-                {upiError && <p className='error-text'>{upiError}</p>}
+                {upiError && <p className="error-text">{upiError}</p>}
               </>
             )}
-            <div className='modal-buttons'>
-              <button className='post-btn' onClick={handleCancelBooking}>
+            <div className="modal-buttons">
+              <button className="post-btn" onClick={handleCancelBooking}>
                 Confirm Cancellation
-              </button>
-              <button className='cancel-btn' onClick={closeCancelModal}>
+                </button>
+              <button className="cancel-btn" onClick={closeCancelModal}>
                 Close
               </button>
             </div>
@@ -1650,16 +1828,16 @@ const BookingPage = () => {
 };
 
 const headerCellStyle = {
-  textAlign: 'left',
-  fontWeight: '600',
-  letterSpacing: '0.5px',
-  color: '#0e0f0f',
+  textAlign: "left",
+  fontWeight: "600",
+  letterSpacing: "0.5px",
+  color: "#0e0f0f",
 };
 
 const tableCellStyle = {
-  borderBottom: '1px solid #e8ecef',
-  color: '#0e0f0f',
-  fontWeight: '500',
+  borderBottom: "1px solid #e8ecef",
+  color: "#0e0f0f",
+  fontWeight: "500",
 };
 
 export default BookingPage;
