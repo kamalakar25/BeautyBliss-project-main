@@ -436,6 +436,28 @@ router.put("/update-confirmation", async (req, res) => {
   const { email, bookingId } = req.body;
 
   try {
+    const user = await User.findOne({
+      "bookings._id": bookingId,
+      "bookings.parlorEmail": email,
+    });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    //find that booking
+    const booking = user.bookings.find(
+      (booking) => booking._id.toString() === bookingId
+    );
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+    booking.confirmed = "Confirmed";
+    user.save();
+  } catch (error) {
+    // console.error("Error fetching user:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+
+  try {
     const user = await User.findOneAndUpdate(
       {
         "bookings._id": bookingId,
@@ -459,11 +481,12 @@ router.put("/update-confirmation", async (req, res) => {
       .status(200)
       .json({ message: "Booking confirmation updated successfully" });
   } catch (error) {
-    console.error("Error updating booking confirmation:", error);
+    // console.error("Error updating booking confirmation:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
 
+    
 // Submit service provider complaint
 router.post("/submit-complaint", async (req, res) => {
   const { email, bookingId, complaint } = req.body;
