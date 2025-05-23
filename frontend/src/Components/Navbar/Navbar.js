@@ -11,13 +11,34 @@ const Navbar = () => {
   const [isNavActive, setIsNavActive] = useState(false);
   const [userRole, setUserRole] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
   const navbarRef = useRef(null);
   const location = useLocation();
+
+  // Google Translate Integration
+  useEffect(() => {
+    const scriptId = "google-translate-script";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.type = "text/javascript";
+      script.src =
+        "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+      document.body.appendChild(script);
+    }
+
+    window.googleTranslateElementInit = () => {
+      new window.google.translate.TranslateElement(
+        { pageLanguage: "en" },
+        "google_translate_element"
+      );
+    };
+  }, []);
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
     setUserRole(role || "");
-    console.log("Navbar: User role set to", role);
+    // console.log("Navbar: User role set to", role);
 
     if (role === "User" || role === "ServiceProvider") {
       fetchNotificationCount();
@@ -45,7 +66,7 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    console.log("Navbar: Notification count updated:", notificationCount);
+    // console.log("Navbar: Notification count updated:", notificationCount);
   }, [notificationCount]);
 
   const toggleNav = () => {
@@ -60,6 +81,10 @@ const Navbar = () => {
     localStorage.clear();
     setUserRole("");
     window.location.href = "/login";
+  };
+
+  const toggleLanguageModal = () => {
+    setShowLanguageModal(!showLanguageModal);
   };
 
   const renderNavLinks = () => {
@@ -104,7 +129,16 @@ const Navbar = () => {
               <b>Doctor</b>
             </Link>
           </li>
-          <li style={{ "--i": 5 }}>
+          <li style={{ "--i": 5 }} className="logout-item">
+            <div>
+              <label htmlFor="google_translate_element">language</label>
+            </div>
+            <div
+              id="google_translate_element"
+              className="custom-translate-dropdown me-3"
+            ></div>
+          </li>
+          <li style={{ "--i": 6 }} className="logout-item">
             <Link
               to="/login"
               className={isActiveLink("/login")}
@@ -184,7 +218,16 @@ const Navbar = () => {
                 Faqs
               </Link>
             </li>
-            <li style={{ "--i": 8 }}>
+            <li style={{ "--i": 8 }} className="logout-item">
+              <div>
+                <label htmlFor="google_translate_element">language</label>
+              </div>
+              <div
+                id="google_translate_element"
+                className="custom-translate-dropdown me-3"
+              ></div>
+            </li>
+            <li style={{ "--i": 9 }} className="logout-item">
               <Link
                 to="/login"
                 onClick={() => {
@@ -271,7 +314,6 @@ const Navbar = () => {
                 </span>
               </Link>
             </li>
-
             <li style={{ "--i": 7 }}>
               <Link
                 to="/SpProfile"
@@ -281,7 +323,16 @@ const Navbar = () => {
                 Profile
               </Link>
             </li>
-            <li style={{ "--i": 8 }}>
+            <li style={{ "--i": 8 }} className="logout-item">
+              <div>
+                <label htmlFor="google_translate_element">language</label>
+              </div>
+              <div
+                id="google_translate_element"
+                className="custom-translate-dropdown me-3"
+              ></div>
+            </li>
+            <li style={{ "--i": 9 }} className="logout-item">
               <Link
                 to="/login"
                 onClick={() => {
@@ -365,7 +416,7 @@ const Navbar = () => {
                       {notificationCount}
                     </span>
                   )}
-                  <b>Notifications</b> {/* Keep the text for User role */}
+                  <b>Notifications</b>
                 </span>
               </Link>
             </li>
@@ -378,7 +429,16 @@ const Navbar = () => {
                 <b>Profile</b>
               </Link>
             </li>
-            <li style={{ "--i": 9 }}>
+            <li style={{ "--i": 9 }} className="logout-item">
+              <div>
+                <label htmlFor="google_translate_element">language</label>
+              </div>
+              <div
+                id="google_translate_element"
+                className="custom-translate-dropdown me-3"
+              ></div>
+            </li>
+            <li style={{ "--i": 10 }} className="logout-item">
               <Link
                 to="/login"
                 onClick={() => {
@@ -408,19 +468,21 @@ const Navbar = () => {
       }}
       ref={navbarRef}
     >
-      <div className="navbar-logo">
-        <Link to="/" style={{ textDecoration: "none" }}>
-          <h1 style={{ color: "#36257d", fontStyle: "Cursive" }}>
-            BeautyBliss
-          </h1>
-        </Link>
+      <div className="navbar-container">
+        <div className="navbar-logo">
+          <Link to="/" style={{ textDecoration: "none" }}>
+            <h1 style={{ color: "#36257d", fontStyle: "Cursive" }}>
+              BeautyBliss
+            </h1>
+          </Link>
+        </div>
+        <button className="navbar-toggle" onClick={toggleNav}>
+          ☰
+        </button>
+        <ul className={`navbar-links ${isNavActive ? "active" : ""}`}>
+          {renderNavLinks()}
+        </ul>
       </div>
-      <button className="navbar-toggle" onClick={toggleNav}>
-        ☰
-      </button>
-      <ul className={`navbar-links ${isNavActive ? "active" : ""}`}>
-        {renderNavLinks()}
-      </ul>
     </nav>
   );
 };
