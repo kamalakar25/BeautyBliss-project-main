@@ -486,7 +486,6 @@ router.put("/update-confirmation", async (req, res) => {
   }
 });
 
-    
 // Submit service provider complaint
 router.post("/submit-complaint", async (req, res) => {
   const { email, bookingId, complaint } = req.body;
@@ -497,23 +496,30 @@ router.post("/submit-complaint", async (req, res) => {
         .status(400)
         .json({ message: "Email, bookingId, and complaint are required" });
     }
-
-    const user = await User.findOneAndUpdate(
-      { "bookings._id": bookingId, "bookings.parlorEmail": email },
-      { $set: { "bookings.$.spComplaint": complaint } },
-      { new: true }
-    );
-
+    const user = await User.findOne({
+      "bookings._id": bookingId,
+      "bookings.parlorEmail": email,
+    });
     if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    //find that booking
+    const booking = user.bookings.find(
+      (booking) => booking._id.toString() === bookingId
+    );
+    if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
+    booking.spComplaint = complaint;
+    user.save();
 
     res.status(200).json({ message: "Complaint submitted successfully" });
   } catch (error) {
     // console.error('Error submitting complaint:', error);
     res.status(500).json({ message: "Internal server error" });
   }
-});
+});    
+
 
 // Update user complaint
 router.post("/update/booking/complaint", async (req, res) => {
