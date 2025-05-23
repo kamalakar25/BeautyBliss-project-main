@@ -13,7 +13,7 @@ const formatTimeAgo = (date) => {
     }
     return formatDistanceToNow(new Date(date), { addSuffix: true });
   } catch (error) {
-    console.error('Error formatting date:', error);
+    // console.error('Error formatting date:', error);
     return 'Unknown time';
   }
 };
