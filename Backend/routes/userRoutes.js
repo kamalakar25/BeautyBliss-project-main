@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const User = require("../models/user");
 const Shop = require("../models/SpSchema");
+const { ObjectId } = require("mongoose").Types;
 
 const nodemailer = require("nodemailer");
 
@@ -53,7 +54,7 @@ router.post("/reschedule/booking", async (req, res) => {
 
     res.json({ status: "success" });
   } catch (error) {
-    console.error("Error rescheduling booking:", error);
+    // console.error("Error rescheduling booking:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -376,7 +377,7 @@ router.get("/shop/by-service/:serviceId", async (req, res) => {
 
     res.status(200).json(shopObj);
   } catch (error) {
-    console.error("Error fetching shop by service:", error);
+    // console.error("Error fetching shop by service:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -430,6 +431,7 @@ router.post("/update/booking/rating", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // Update booking confirmation
 router.put("/update-confirmation", async (req, res) => {
@@ -518,8 +520,7 @@ router.post("/submit-complaint", async (req, res) => {
     // console.error('Error submitting complaint:', error);
     res.status(500).json({ message: "Internal server error" });
   }
-});    
-
+});
 
 // Update user complaint
 router.post("/update/booking/complaint", async (req, res) => {
@@ -1222,7 +1223,7 @@ router.put("/updateProfile/:email", async (req, res) => {
     const { password, ...userData } = user.toObject();
     res.json({ message: "Profile updated successfully", user: userData });
   } catch (error) {
-    console.error("Update error:", error);
+    // console.error("Update error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
